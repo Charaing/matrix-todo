@@ -30,7 +30,7 @@ svg{display:block}
 #app{position:relative;max-width:440px;margin:0 auto;height:100%;overflow:hidden}
 
 /* ---------- screens & transitions ---------- */
-.screen{position:absolute;inset:0;overflow-y:auto;padding:var(--top) 17px 120px;will-change:transform}
+.screen{position:absolute;inset:0;overflow-y:auto;touch-action:pan-y;padding:var(--top) 17px 120px;will-change:transform}
 .screen.in{animation:scrIn .42s var(--ease)}
 .screen.out{pointer-events:none;animation:scrOut .3s var(--ease) forwards;z-index:0}
 @keyframes scrIn{from{opacity:0;transform:translateX(calc(var(--dir,1) * 36px))}}
@@ -548,15 +548,26 @@ function floating(){
   return h;
 }
 
+const pillLeft=p=>`calc(3.5px + ${p} * (100% - 7px) / 5)`;
+/* p may be fractional while dragging; animate=false follows the finger 1:1 */
+function setNav(p,animate,hl){
+  const nav=$('#app .tabbar');if(!nav)return;
+  const pill=nav.querySelector('.tabpill');
+  pill.style.transition=animate?'':'none';pill.style.left=pillLeft(p);
+  const on=hl!=null?hl:Math.round(p);
+  nav.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('on',i===on));
+}
 function render(dir){
   const app=$('#app');
   const keepChat=$('#chatIn')?.value||'';
   const keepScroll=!dir&&$('#app .screen:not(.out)')?.scrollTop||0;
   const old=dir?$('#app .screen:not(.out)'):null;
   const ti=TABS.findIndex(x=>x[0]===ui.tab);
-  app.innerHTML=`<div class="screen ${ui.tab} ${ui.enter?'enter':''} ${dir?'in':''}" style="--dir:${dir||1}">${SCREENS[ui.tab]()}</div>
-    ${floating()}
-    <nav class="tabbar"><span class="tabpill" style="left:calc(3.5px + ${ti} * (100% - 7px) / 5);width:calc((100% - 7px) / 5)"></span>${TABS.map(([k,l,ic])=>`<button class="tab ${ui.tab===k?'on':''}" data-a="tab" data-v="${k}">${ic}<span>${l}</span></button>`).join('')}</nav>`;
+  const nav=app.querySelector('.tabbar');
+  app.innerHTML=`<div class="screen ${ui.tab} ${ui.enter?'enter':''} ${dir?'in':''}" style="--dir:${dir||1}">${SCREENS[ui.tab]()}</div>${floating()}`;
+  /* keep the tab bar element alive so the pill glides to the new tab */
+  if(nav){app.appendChild(nav);setNav(ti,true)}
+  else app.insertAdjacentHTML('beforeend',`<nav class="tabbar"><span class="tabpill" style="left:${pillLeft(ti)};width:calc((100% - 7px) / 5)"></span>${TABS.map(([k,l,ic])=>`<button class="tab ${ui.tab===k?'on':''}" data-a="tab" data-v="${k}">${ic}<span>${l}</span></button>`).join('')}</nav>`);
   const scr=$('#app .screen');
   if(old){old.classList.remove('in','enter');old.classList.add('out');old.style.setProperty('--dir',dir);app.prepend(old);setTimeout(()=>old.remove(),320)}
   else scr.scrollTop=keepScroll;
@@ -735,8 +746,6 @@ function switchTab(k){
   if(k===ui.tab){const s=$('#app .screen');s&&s.scrollTo({top:0,behavior:'smooth'});return}
   const a=TABS.findIndex(x=>x[0]===ui.tab),b=TABS.findIndex(x=>x[0]===k);
   ui.tab=k;ui.fab=false;ui.chatSel=null;ui.enter=true;
-  /* slide the pill before rebuilding so the move is visible */
-  const pill=$('.tabpill');if(pill)pill.style.left=`calc(3.5px + ${b} * (100% - 7px) / 5)`;
   render(b>a?1:-1);
 }
 const A={
@@ -837,6 +846,69 @@ document.addEventListener('touchend',e=>{if(tx==null)return;const dx=e.changedTo
   if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.4){swallowClick=true;setTimeout(()=>swallowClick=false,350);moveMonth(dx<0?1:-1)}},{passive:true});
 document.addEventListener('wheel',e=>{if(!e.target.closest('#cgrid'))return;const dlt=Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY;if(Math.abs(dlt)<25)return;
   if(moveMonth.lock)return;moveMonth.lock=true;setTimeout(()=>moveMonth.lock=false,450);moveMonth(dlt>0?1:-1)},{passive:true});
+
+/* ---- swipe the page sideways to change tabs (follows the finger) ---- */
+let sw=null;
+const tabIdx=()=>TABS.findIndex(x=>x[0]===ui.tab);
+function swipeBack(s){
+  s.scr.style.transition='transform .4s var(--spring),opacity .3s';s.scr.style.transform='';s.scr.style.opacity='';
+  setNav(tabIdx(),true);
+}
+document.addEventListener('touchstart',e=>{
+  sw=null;
+  if(draft||$('#sheet').innerHTML||e.touches.length>1)return;
+  const t=e.target;
+  if(t.closest('#cgrid,.tabbar,input,textarea,select,.dial,.dacts,.catcher'))return;
+  const scr=t.closest('#app .screen:not(.out)');if(!scr)return;
+  sw={x:e.touches[0].clientX,y:e.touches[0].clientY,t:Date.now(),scr,mode:null,dx:0};
+},{passive:true});
+document.addEventListener('touchmove',e=>{
+  if(!sw)return;
+  if(drag&&drag.active){sw=null;return}
+  const dx=e.touches[0].clientX-sw.x,dy=e.touches[0].clientY-sw.y;
+  if(!sw.mode){
+    if(Math.abs(dx)<10&&Math.abs(dy)<10)return;
+    sw.mode=Math.abs(dx)>Math.abs(dy)*1.2?'h':'v';
+    if(sw.mode==='h'){if(drag){clearTimeout(drag.timer);drag=null}sw.scr.style.transition='none';sw.x+=dx>0?10:-10}
+    return;
+  }
+  if(sw.mode!=='h')return;
+  e.preventDefault();
+  const i=tabIdx(),W=innerWidth;let d=e.touches[0].clientX-sw.x;
+  if((i===0&&d>0)||(i===TABS.length-1&&d<0))d*=.28;   /* rubber band at the ends */
+  sw.dx=d;
+  sw.scr.style.transform=`translateX(${d}px)`;sw.scr.style.opacity=String(1-Math.min(Math.abs(d)/W,1)*.6);
+  const p=Math.max(0,Math.min(TABS.length-1,i-d/W));setNav(p,false);
+},{passive:false});
+function swipeEnd(cancel){
+  if(!sw)return;const s=sw;sw=null;if(s.mode!=='h')return;
+  swallowClick=true;setTimeout(()=>swallowClick=false,300);
+  const i=tabIdx(),v=s.dx/Math.max(1,Date.now()-s.t);
+  const go=cancel?0:(Math.abs(s.dx)>innerWidth*.22||Math.abs(v)>.45)?(s.dx<0?1:-1):0;
+  const ni=i+go;
+  if(go&&ni>=0&&ni<TABS.length){buzz();switchTab(TABS[ni][0])}else swipeBack(s);
+}
+document.addEventListener('touchend',()=>swipeEnd(false));
+document.addEventListener('touchcancel',()=>swipeEnd(true));
+
+/* ---- drag along the tab bar ---- */
+let tb=null;
+const tbIndex=x=>{const r=$('#app .tabbar').getBoundingClientRect();return Math.max(0,Math.min(TABS.length-1,Math.floor((x-r.left)/(r.width/TABS.length))))};
+document.addEventListener('touchstart',e=>{tb=e.target.closest('#app .tabbar')?{x:e.touches[0].clientX,moved:false,idx:tabIdx()}:null},{passive:true});
+document.addEventListener('touchmove',e=>{
+  if(!tb)return;const x=e.touches[0].clientX;
+  if(!tb.moved&&Math.abs(x-tb.x)<6)return;
+  tb.moved=true;e.preventDefault();
+  const r=$('#app .tabbar').getBoundingClientRect();const w=r.width/TABS.length;
+  const p=Math.max(0,Math.min(TABS.length-1,(x-r.left)/w-.5));
+  const idx=tbIndex(x);if(idx!==tb.idx){tb.idx=idx;buzz()}
+  setNav(p,false,idx);
+},{passive:false});
+document.addEventListener('touchend',()=>{
+  if(!tb)return;const t=tb;tb=null;if(!t.moved)return;
+  swallowClick=true;setTimeout(()=>swallowClick=false,300);
+  if(t.idx!==tabIdx())switchTab(TABS[t.idx][0]);else setNav(t.idx,true);
+});
 
 /* ---- long-press drag between quadrants ---- */
 let drag=null;
