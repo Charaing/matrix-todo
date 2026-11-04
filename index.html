@@ -4,240 +4,310 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="매트릭스">
 <meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
 <title>매트릭스 투두</title>
 <style>
+:root{
+  --blue:#0a95ff;--slate:#5f6d73;--card:#202020;--btn:#1f1f1f;--txt:#f5f5f7;--sub:#8e8e93;--num:#cfd4db;
+  --ease:cubic-bezier(.2,.85,.25,1);--spring:cubic-bezier(.34,1.45,.5,1);
+  --top:max(env(safe-area-inset-top),14px);
+}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{background:#000;color:#f2f2f4;height:100%;overflow:hidden;
-  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR","Malgun Gothic",sans-serif;-webkit-font-smoothing:antialiased}
+html,body{background:#000;color:var(--txt);height:100%;overflow:hidden;overscroll-behavior:none;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Apple SD Gothic Neo","Pretendard","Noto Sans KR","Malgun Gothic",sans-serif;
+  -webkit-font-smoothing:antialiased;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea{-webkit-user-select:text;user-select:text}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 input,select{font:inherit;color:inherit}
 svg{display:block}
-#app{position:relative;max-width:440px;margin:0 auto;height:100%;display:flex;flex-direction:column;overflow:hidden}
-.screen{flex:1;min-height:0;overflow-y:auto;padding:calc(env(safe-area-inset-top) + 14px) 18px 130px}
-.screen::-webkit-scrollbar{display:none}
+::-webkit-scrollbar{display:none}
+#app{position:relative;max-width:440px;margin:0 auto;height:100%;overflow:hidden}
 
-/* header */
-.hdr{display:flex;align-items:center;gap:10px;margin-bottom:18px;min-height:50px}
-.hdr .sp{flex:1}
-.cbtn{width:50px;height:50px;flex:none;border-radius:50%;background:#262628;display:grid;place-items:center;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 0 0 1px rgba(255,255,255,.05)}
-.cbtn svg{width:25px;height:25px}
-.cbtn:active,.tab:active,.fab:active{transform:scale(.94)}
-.pillgrp{height:50px;border-radius:25px;background:#262628;display:flex;align-items:center;padding:0 8px;gap:10px;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 0 0 1px rgba(255,255,255,.05)}
-.pillgrp .cbtn{background:none;box-shadow:none;width:40px;height:40px}
-.badge{min-width:30px;height:30px;padding:0 6px;border:1.5px solid #5a5a5e;border-radius:9px;display:grid;place-items:center;font-size:15px;font-weight:600}
-.htitle{flex:1;text-align:center;font-size:21px;font-weight:700;color:#d6d6da;letter-spacing:-.3px}
-
-/* cards */
-.card{background:linear-gradient(180deg,#232326,#19191b);border:1px solid rgba(255,255,255,.09);border-radius:24px;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
-.ck{width:28px;height:28px;flex:none;border-radius:8px;border:2px solid #5b636b;display:grid;place-items:center;color:transparent}
-.ck svg{width:18px;height:18px}
-.ck.on{background:#5b636b;color:#fff;border-color:#6d767e}
-.ck.sm{width:22px;height:22px;border-radius:6px}
-.ck.sm svg{width:15px;height:15px}
-.done .ttl,.qi.done .qt{color:#6a6a6f;text-decoration:line-through;text-decoration-thickness:2px}
-
-/* tab bar */
-.tabbar{position:absolute;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 10px);height:68px;border-radius:34px;
-  background:rgba(32,32,34,.92);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);display:flex;padding:5px;
-  border:1px solid rgba(255,255,255,.08);z-index:20}
-.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:29px;font-size:11.5px;color:#e6e6e8;white-space:nowrap}
-.tab svg{width:25px;height:25px}
-.tab.on{background:#09090b;color:#3d8bfd}
-
-/* floating buttons */
-.fab{position:absolute;z-index:19;display:grid;place-items:center;border-radius:50%;background:#262628;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 0 0 1px rgba(255,255,255,.05),0 6px 20px rgba(0,0,0,.5)}
-.fab-l{left:18px;bottom:calc(env(safe-area-inset-bottom) + 92px);width:52px;height:52px}
-.fab-l svg{width:26px;height:26px}
-.fab-r{right:18px;bottom:calc(env(safe-area-inset-bottom) + 92px);width:56px;height:56px}
-.fab-r svg{width:26px;height:26px}
-.dial{position:absolute;right:16px;z-index:19;display:flex;flex-direction:column;gap:12px;bottom:calc(env(safe-area-inset-bottom) + 160px)}
-.dial button{width:62px;height:62px;border-radius:20px;background:rgba(40,40,43,.95);display:grid;place-items:center;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 0 0 1px rgba(255,255,255,.06),0 8px 22px rgba(0,0,0,.6);animation:pop .22s backwards}
-.dial button:nth-child(2){animation-delay:.03s}.dial button:nth-child(3){animation-delay:.06s}.dial button:nth-child(4){animation-delay:.09s}
-@keyframes pop{from{opacity:0;transform:translateY(14px) scale(.8)}}
-.dimmer{position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:18;animation:fade .2s}
+/* ---------- screens & transitions ---------- */
+.screen{position:absolute;inset:0;overflow-y:auto;padding:var(--top) 17px 120px;will-change:transform}
+.screen.in{animation:scrIn .42s var(--ease)}
+.screen.out{pointer-events:none;animation:scrOut .3s var(--ease) forwards;z-index:0}
+@keyframes scrIn{from{opacity:0;transform:translateX(calc(var(--dir,1) * 36px))}}
+@keyframes scrOut{to{opacity:0;transform:translateX(calc(var(--dir,1) * -36px))}}
+.enter .st{animation:rise .5s var(--ease) backwards;animation-delay:calc(var(--i,0) * 35ms + 60ms)}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}}
 @keyframes fade{from{opacity:0}}
+@keyframes popIn{0%{opacity:0;transform:scale(.85)}60%{opacity:1;transform:scale(1.03)}100%{transform:none}}
 
-/* matrix */
-.screen.matrix{display:flex;flex-direction:column;overflow:hidden}
-.mx{flex:1;min-height:0;display:grid;grid-template-columns:22px 1fr 1fr;grid-template-rows:auto 1fr 1fr;gap:12px 12px}
-.colh{text-align:center;font-weight:700;font-size:16px;color:#e9e9eb}
-.rowh{writing-mode:vertical-rl;text-orientation:sideways;transform:rotate(180deg);text-align:center;font-weight:700;font-size:16px;color:#e9e9eb;align-self:center}
-.quad{min-height:0;overflow-y:auto;padding:14px 14px;border-radius:24px;background:linear-gradient(180deg,#232325,#1a1a1c);
-  border:1px solid rgba(255,255,255,.07);box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
-.quad::-webkit-scrollbar{display:none}
-.qhead{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:#bdbdc2;margin-bottom:8px}
-.qhead em{font-style:normal;margin-left:auto;color:#77777c;font-weight:600}
-.qi{display:flex;align-items:flex-start;gap:9px;padding:5px 0;font-size:15px;line-height:22px;cursor:pointer}
+/* ---------- glass buttons ---------- */
+.glass{background:var(--btn);border:1px solid rgba(255,255,255,.09);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 14px rgba(0,0,0,.45)}
+.press{transition:transform .25s var(--spring),background .2s}
+.press:active{transform:scale(.92)}
+.hdr{display:flex;align-items:center;gap:12px;height:44px;margin-bottom:22px;position:relative;z-index:2}
+.hdr .sp{flex:1}
+.cbtn{width:44px;height:44px;flex:none;border-radius:50%;display:grid;place-items:center}
+.cbtn svg{width:25px;height:25px}
+.pillgrp{width:103px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:space-between;padding:0 14px 0 13px}
+.pillgrp .ib{display:grid;place-items:center;width:30px;height:30px}
+.pillgrp .ib svg{width:25px;height:25px}
+.badge{width:30px;height:30px;border:1.6px solid #5a5a5e;border-radius:9px;display:grid;place-items:center;font-size:15px;font-weight:600;color:#e8e8ea}
+.htitle{position:absolute;left:50%;transform:translateX(-50%);font-size:19.5px;font-weight:700;color:var(--num);letter-spacing:-.3px;white-space:nowrap}
+
+/* ---------- checkbox ---------- */
+.ck{width:20px;height:20px;flex:none;border-radius:5.5px;border:1.6px solid var(--slate);display:grid;place-items:center;color:transparent;transition:background .2s,border-color .2s}
+.ck svg{width:14px;height:14px}
+.ck.on{background:var(--slate);color:#fff;border-color:var(--slate)}
+.ck.sm{width:17px;height:17px;border-radius:4.5px}
+.ck.sm svg{width:12px;height:12px}
+.ck.pop{animation:ckPop .42s var(--spring)}
+.ck.pop.on svg path{stroke-dasharray:24;stroke-dashoffset:24;animation:draw .32s .06s var(--ease) forwards}
+@keyframes ckPop{0%{transform:scale(1)}35%{transform:scale(.72)}100%{transform:scale(1)}}
+@keyframes draw{to{stroke-dashoffset:0}}
+.strike{color:#6e6e73;text-decoration:line-through;text-decoration-thickness:1.6px;transition:color .25s}
+.strike.anim{text-decoration:none;background:linear-gradient(#6e6e73,#6e6e73) left 55%/0 1.6px no-repeat;animation:strike .35s .05s var(--ease) forwards;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+@keyframes strike{to{background-size:100% 1.6px}}
+
+/* ---------- tab bar ---------- */
+.tabbar{position:absolute;left:21px;right:21px;bottom:22px;height:60px;border-radius:30px;display:flex;padding:3.5px;z-index:30;
+  background:rgba(31,31,31,.86);-webkit-backdrop-filter:blur(24px) saturate(160%);backdrop-filter:blur(24px) saturate(160%);
+  border:1px solid rgba(255,255,255,.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 8px 30px rgba(0,0,0,.6)}
+.tab{flex:1;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;color:#ececee;white-space:nowrap;z-index:1;transition:color .3s}
+.tab svg{width:23px;height:23px;transition:transform .35s var(--spring)}
+.tab:active svg{transform:scale(.85)}
+.tab.on{color:var(--blue)}
+.tabpill{position:absolute;top:3.5px;bottom:3.5px;border-radius:27px;background:#0a0a0a;transition:left .42s var(--spring),width .42s var(--spring);z-index:0;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+
+/* ---------- floating ---------- */
+.fab{position:absolute;z-index:25;display:grid;place-items:center;border-radius:50%;bottom:90px}
+.fab-l{left:16px;width:46px;height:46px}
+.fab-l svg{width:25px;height:25px}
+.fab-r{right:30px;width:47px;height:47px}
+.fab-r svg{width:22px;height:22px;transition:transform .35s var(--spring)}
+.fab-r.open svg{transform:rotate(90deg)}
+.catcher{position:absolute;inset:0;z-index:24}
+.dial{position:absolute;right:17px;bottom:147px;z-index:26;display:flex;flex-direction:column;gap:15px}
+.dial.m{right:22px}
+.dial button{width:63px;height:63px;border-radius:21px;display:grid;place-items:center;background:rgba(32,32,32,.9);
+  -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 10px 26px rgba(0,0,0,.6);animation:dialIn .38s var(--spring) backwards}
+.dial button:nth-child(1){animation-delay:.09s}.dial button:nth-child(2){animation-delay:.06s}.dial button:nth-child(3){animation-delay:.03s}
+@keyframes dialIn{from{opacity:0;transform:translateY(24px) scale(.6)}}
+
+/* ---------- matrix ---------- */
+.screen.matrix{overflow:hidden;display:flex;flex-direction:column;padding-bottom:94px}
+.mx{flex:1;min-height:0;display:grid;grid-template-columns:18px 1fr 1fr;grid-template-rows:auto 1fr 1fr;column-gap:9px;margin:0 14px 0 -12px}
+.colh{text-align:center;font-weight:700;font-size:15px;color:#ececee;padding-bottom:12px}
+.rowh{writing-mode:vertical-rl;text-orientation:sideways;transform:rotate(180deg);text-align:center;font-weight:700;font-size:15px;color:#ececee;align-self:center}
+.rowh.r2,.quad.r2{margin-top:28px}
+.quad{min-height:0;overflow-y:auto;padding:15px 14px;border-radius:18px;background:var(--card);border:1px solid rgba(255,255,255,.06);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07);transition:background .2s,box-shadow .2s,transform .25s var(--spring)}
+.quad.hot{background:#2a2a2c;box-shadow:inset 0 0 0 1.5px var(--hc),inset 0 1px 0 rgba(255,255,255,.07);transform:scale(1.02)}
+.qhead{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#a8a8ad;margin-bottom:8px}
+.qhead em{font-style:normal;margin-left:auto;color:#6e6e73}
+.qi{display:flex;align-items:flex-start;gap:8px;padding:4px 0;font-size:14px;line-height:19px;cursor:pointer;touch-action:pan-y;-webkit-user-select:none;user-select:none}
+.qi .ck{margin-top:1px}
 .qt{flex:1;min-width:0;word-break:break-all}
-.qt small{color:#77777c;font-size:12px}
-.qdot{width:6px;height:6px;border-radius:50%;display:inline-block;margin:0 4px 2px 0;vertical-align:middle}
+.qt small{color:#6e6e73;font-size:11px}
+.qi.dragging{opacity:.25}
+.ghost{position:fixed;left:0;top:0;z-index:90;pointer-events:none;background:#2c2c2e;border-radius:12px;padding:8px 10px;box-shadow:0 14px 34px rgba(0,0,0,.6);
+  transition:scale .2s;font-size:14px;display:flex;gap:8px;align-items:center}
+.qdot{width:6px;height:6px;border-radius:50%;display:inline-block;margin:0 5px 2px 0;vertical-align:middle}
+.flash{animation:popIn .45s var(--ease)}
 
-/* tree / list cards */
-.tcard{display:flex;align-items:center;gap:16px;padding:14px 18px 14px 22px;margin-bottom:10px;cursor:pointer}
-.tcard .ck{margin-left:6px}
-.tcm{flex:1;min-width:0}
-.ttl{font-size:17px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.meta{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
-.chip{display:inline-flex;align-items:center;gap:5px;background:#2e2e31;color:#a3a3a8;font-size:13px;padding:3px 8px;border-radius:7px}
-.chip svg{width:13px;height:13px}
+/* ---------- list cards ---------- */
+.tcard{display:flex;align-items:center;height:52px;padding:0 13px 0 43px;margin-bottom:7px;border-radius:17px;background:var(--card);cursor:pointer;
+  border:1px solid rgba(255,255,255,.06);box-shadow:inset 0 1px 0 rgba(255,255,255,.12);transition:transform .25s var(--spring)}
+.tcard:active{transform:scale(.98)}
+.tcard .tcm{flex:1;min-width:0;margin-left:12px}
+.tcard .ttl{font-size:15px;font-weight:600;line-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.tcard .ttl span{display:inline}
+.meta{display:flex;gap:5px;margin-top:3px}
+.chip{display:inline-flex;align-items:center;gap:4px;height:15px;background:#2c2c2e;color:#8e8e93;font-size:10.5px;padding:0 5px;border-radius:4px;font-weight:500}
+.chip svg{width:10px;height:10px}
 .tnode .tnode{margin-left:24px;position:relative}
-.tnode .tnode::before{content:"";position:absolute;left:-14px;top:-10px;height:46px;width:12px;border-left:2px solid #3a3a3e;border-bottom:2px solid #3a3a3e;border-bottom-left-radius:10px}
-.empty{color:#6c6c71;text-align:center;padding:60px 20px;font-size:15px;line-height:1.6}
-.sect{font-size:14px;font-weight:700;color:#8e8e93;margin:22px 4px 10px}
+.tnode .tnode::before{content:"";position:absolute;left:-14px;top:-8px;height:34px;width:11px;border-left:1.6px solid #3a3a3e;border-bottom:1.6px solid #3a3a3e;border-bottom-left-radius:9px}
+.empty{color:#6c6c71;text-align:center;padding:70px 20px;font-size:14.5px;line-height:1.65}
+.sect{font-size:13px;font-weight:700;color:var(--sub);margin:22px 4px 9px}
 
-/* dashboard */
-.hero{display:flex;align-items:center;gap:18px;padding:20px 22px;margin-bottom:12px}
-.hero h2{font-size:20px;font-weight:700;margin-bottom:4px}
-.hero p{color:#9a9a9f;font-size:14px}
-.ring{position:relative;width:74px;height:74px;flex:none}
-.ring b{position:absolute;inset:0;display:grid;place-items:center;font-size:17px}
-.qgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.qtile{padding:16px;cursor:pointer}
-.qtile .top{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px}
-.qtile .lbl{color:#8a8a8f;font-size:12px;margin:6px 0 10px}
-.qtile .num{font-size:24px;font-weight:700}
-.qtile .num small{font-size:13px;color:#8a8a8f;font-weight:500}
-.bar{height:5px;border-radius:3px;background:#333336;margin-top:10px;overflow:hidden}
-.bar i{display:block;height:100%;border-radius:3px}
+/* ---------- dashboard ---------- */
+.hero{display:flex;align-items:center;gap:18px;padding:18px 20px;margin-bottom:10px;border-radius:20px;background:var(--card);box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+.hero h2{font-size:18px;font-weight:700;margin-bottom:4px}
+.hero p{color:#9a9a9f;font-size:13.5px}
+.ring{position:relative;width:70px;height:70px;flex:none}
+.ring b{position:absolute;inset:0;display:grid;place-items:center;font-size:16px}
+.ring .arc{animation:ring 1s var(--ease) backwards .15s}
+@keyframes ring{from{stroke-dashoffset:var(--c)}}
+.qgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.qtile{padding:15px;border-radius:18px;background:var(--card);box-shadow:inset 0 1px 0 rgba(255,255,255,.12);cursor:pointer}
+.qtile .top{display:flex;align-items:center;gap:7px;font-weight:700;font-size:14.5px}
+.qtile .lbl{color:#7c7c81;font-size:11.5px;margin:5px 0 9px}
+.qtile .num{font-size:23px;font-weight:700}
+.qtile .num small{font-size:12px;color:#7c7c81;font-weight:500}
+.bar{height:4px;border-radius:2px;background:#333336;margin-top:9px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:2px;animation:grow .8s var(--ease) backwards .2s}
+@keyframes grow{from{width:0}}
 
-/* calendar */
-.screen.calendar{display:flex;flex-direction:column;overflow:hidden;padding-bottom:0}
-.wk{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:15px;color:#a9a9ae;margin:4px 0 8px}
-.wk .sun{color:#f0524f}.wk .sat{color:#3d8bfd}
-.cgrid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(6,1fr);gap:4px 3px;touch-action:pan-y}
-.cell{border-radius:16px;padding-top:6px;text-align:center;font-size:16px;font-weight:500;cursor:pointer;overflow:hidden;border:1.5px solid transparent;min-height:0}
-.cell.sun{color:#f0524f}.cell.sat{color:#e8e8ea}
-.cell.out{color:#4b4b4f}
-.cell.sel{background:#232325}
-.cell.today{border-color:#1f4f8f;background:#050d18;color:#3d8bfd}
-.cell .bars{display:flex;flex-direction:column;gap:3px;padding:6px 7px 0}
-.cell .bars i{height:4px;border-radius:2px;display:block}
-.cell .more{font-size:10px;color:#77777c;margin-top:2px}
-.daysheet{margin:10px -18px 0;background:#1c1c1e;border-radius:28px 28px 0 0;border-top:1px solid rgba(255,255,255,.08);
-  padding:16px 18px calc(env(safe-area-inset-bottom) + 92px);max-height:42%;display:flex;flex-direction:column}
-.daysheet .grab{width:38px;height:5px;border-radius:3px;background:#3a3a3d;margin:0 auto 12px}
-.daysheet .dlist{overflow-y:auto;flex:1;min-height:0}
-.daysheet h3{font-size:20px;font-weight:700;text-align:center;color:#d8d8dc}
-.daysheet .sub{text-align:center;color:#6f6f74;font-size:16px;line-height:1.55;margin-top:8px}
-.drow{display:flex;align-items:center;gap:12px;padding:10px 6px;border-bottom:1px solid #2a2a2d;cursor:pointer}
+/* ---------- calendar ---------- */
+.screen.calendar{overflow:hidden;display:flex;flex-direction:column;padding-bottom:0}
+.screen.calendar .hdr{margin-bottom:30px}
+.wk{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:14px;color:var(--num);margin-bottom:12px}
+.wk .sun{color:#ff4245}.wk .sat{color:var(--blue)}
+.cgwrap{flex:0 1 auto;min-height:0;overflow:hidden}
+.cgrid{display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(6,minmax(0,59px));row-gap:9px;column-gap:1.5px;touch-action:pan-y;height:100%}
+.cgrid.ms{animation:mSlide .38s var(--ease)}
+@keyframes mSlide{from{opacity:0;transform:translateX(calc(var(--dir) * 60px))}}
+.cell{border-radius:13px;padding-top:5px;text-align:center;font-size:15px;font-weight:500;color:var(--num);cursor:pointer;overflow:hidden;border:1.5px solid transparent;min-height:0;
+  transition:background .25s,border-color .25s}
+.cell.sun{color:#ff4245}
+.cell.out{color:#4a4a4d}
+.cell.sel{background:#1f1f20}
+.cell.sel.pop,.cell.today.pop{animation:selPop .35s var(--spring)}
+@keyframes selPop{from{transform:scale(.86)}}
+.cell.today{border-color:#123456;background:#00070c;color:var(--blue)}
+.cell .bars{display:flex;flex-direction:column;gap:2.5px;padding:6px 4px 0}
+.cell .bars i{height:3px;border-radius:1.5px;display:block;background:#8a8f94}
+.cell .more{font-size:9px;color:#6e6e73;margin-top:1px}
+.daysheet{flex:1 0 200px;position:relative;margin:14px -17px 0;background:#212121;border-radius:24px 24px 0 0;
+  box-shadow:inset 0 1px 0 #2e2e2e;padding:22px 20px 0;display:flex;flex-direction:column;min-height:0}
+.daysheet .dlist{overflow-y:auto;flex:1;min-height:0;padding-bottom:150px}
+.daysheet h3{font-size:17px;font-weight:700;text-align:center;color:#e5e5ea;margin-top:6px}
+.daysheet .sub{text-align:center;color:#5d5d62;font-size:15px;line-height:1.5;margin-top:10px}
+.daysheet .anim{animation:rise .4s var(--ease)}
+.drow{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid #2c2c2e;cursor:pointer}
 .drow:last-child{border:0}
-.drow .ttl{font-size:16px;flex:1}
-.drow .tm{color:#8e8e93;font-size:13px}
-.evdot{width:12px;height:12px;border-radius:4px;margin:0 8px;flex:none}
-.dacts{display:flex;align-items:center;gap:12px;margin-top:14px}
-.dacts .cbtn{width:52px;height:52px;background:#2a2a2d}
-.addpill{margin-left:auto;height:52px;border-radius:26px;background:#2a2a2d;padding:0 18px 0 22px;display:flex;align-items:center;gap:10px;font-size:17px;font-weight:600;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 0 0 1px rgba(255,255,255,.06)}
-.addpill svg{width:22px;height:22px}
+.drow .ttl{font-size:15px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drow .tm{color:var(--sub);font-size:12.5px}
+.evdot{width:10px;height:10px;border-radius:3px;margin:0 5px;flex:none}
+.dacts{position:absolute;left:16px;right:17px;bottom:90px;display:flex;align-items:center;gap:12px;z-index:5}
+.dacts .pb{width:47px;height:37px;border-radius:19px;display:grid;place-items:center}
+.dacts .pb svg{width:23px;height:23px}
+.addpill{margin-left:auto;height:36px;border-radius:18px;padding:0 13px 0 16px;display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600}
+.addpill svg{width:18px;height:18px;transition:transform .35s var(--spring)}
+.addpill.open svg{transform:rotate(45deg)}
 
-/* chat */
-.screen.chat{display:flex;flex-direction:column;overflow:hidden;padding-bottom:0}
-.msgs{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding:4px 2px 10px}
-.dsep{align-self:center;color:#77777c;font-size:12px;background:#1a1a1c;padding:4px 12px;border-radius:12px;margin:10px 0 4px}
+/* ---------- chat ---------- */
+.screen.chat{overflow:hidden;display:flex;flex-direction:column;padding-bottom:0}
+.msgs{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:5px;padding:4px 2px 10px}
+.dsep{align-self:center;color:#77777c;font-size:11.5px;background:#1a1a1c;padding:4px 12px;border-radius:12px;margin:10px 0 4px}
 .mrow{display:flex;flex-direction:column;align-items:flex-end}
-.bub{background:#2f6fe4;color:#fff;padding:10px 14px;border-radius:20px 20px 6px 20px;max-width:78%;font-size:16px;line-height:1.4;word-break:break-word;white-space:pre-wrap;cursor:pointer}
-.mtime{font-size:11px;color:#66666b;margin:3px 4px 0}
-.macts{display:flex;gap:6px;margin-top:6px}
+.bub{background:var(--blue);color:#fff;padding:9px 14px;border-radius:19px 19px 5px 19px;max-width:78%;font-size:15.5px;line-height:1.4;word-break:break-word;white-space:pre-wrap;cursor:pointer;transition:transform .2s var(--spring)}
+.bub:active{transform:scale(.96)}
+.bub.flash{animation:bubIn .4s var(--spring);transform-origin:right bottom}
+@keyframes bubIn{from{opacity:0;transform:scale(.6) translateY(10px)}}
+.mtime{font-size:10.5px;color:#66666b;margin:3px 4px 0}
+.macts{display:flex;gap:6px;margin-top:6px;animation:rise .25s var(--ease)}
 .macts button{background:#2a2a2d;border-radius:14px;padding:6px 12px;font-size:13px}
 .macts .del{color:#ff6b6b}
-.cin{display:flex;gap:8px;align-items:center;padding:8px 0 calc(env(safe-area-inset-bottom) + 92px)}
-.cin input{flex:1;height:46px;border-radius:23px;border:1px solid #333336;background:#1c1c1e;padding:0 18px;outline:none;font-size:16px}
-.send{width:46px;height:46px;border-radius:50%;background:#3d8bfd;display:grid;place-items:center;color:#fff}
-.send svg{width:22px;height:22px}
+.cin{display:flex;gap:8px;align-items:center;padding:8px 0 96px}
+.cin input{flex:1;height:44px;border-radius:22px;border:1px solid #333336;background:#1c1c1e;padding:0 18px;outline:none;font-size:16px}
+.send{width:44px;height:44px;border-radius:50%;background:var(--blue);display:grid;place-items:center;color:#fff}
+.send svg{width:21px;height:21px}
 
-/* editor */
-#modal .mwrap{position:fixed;inset:0;z-index:50;background:#141417;display:flex;flex-direction:column;max-width:440px;margin:0 auto}
-#modal .mwrap.anim{animation:up .3s cubic-bezier(.2,.8,.2,1)}
-#modal .mwrap.closing{animation:down .22s forwards}
+/* ---------- editor ---------- */
+#modal .mwrap{position:fixed;inset:0;z-index:50;background:#17171c;max-width:440px;margin:0 auto;overflow:hidden}
+#modal .mwrap.anim{animation:up .46s var(--ease)}
+#modal .mwrap.closing{animation:down .3s var(--ease) forwards}
+#modal .mwrap.anim .sec{animation:rise .5s var(--ease) backwards}
+#modal .mwrap.anim .sec:nth-child(2){animation-delay:.04s}#modal .mwrap.anim .sec:nth-child(3){animation-delay:.08s}
+#modal .mwrap.anim .sec:nth-child(4){animation-delay:.12s}#modal .mwrap.anim .sec:nth-child(5){animation-delay:.16s}
+#modal .mwrap.anim .sec:nth-child(n+6){animation-delay:.2s}
 @keyframes up{from{transform:translateY(100%)}}
 @keyframes down{to{transform:translateY(100%)}}
-.mtop{display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top) + 12px) 18px 12px;
-  background:linear-gradient(#141417 70%,rgba(20,20,23,0));position:relative;z-index:2}
-.mtop .cbtn{background:#2a2a2d}
-.mtop .cbtn.xb svg{width:30px;height:30px;color:#2a2a2d}
-.xcirc{width:28px;height:28px;border-radius:50%;background:#8e8e93;display:grid;place-items:center;color:#2a2a2d}
-.xcirc svg{width:16px;height:16px}
-.savebtn .sc{width:30px;height:30px;border-radius:50%;background:#636366;display:grid;place-items:center;color:#2a2a2d;transition:.2s}
-.savebtn .sc svg{width:18px;height:18px}
-.savebtn.ok .sc{background:#3d9bff;color:#123}
-.datepill{position:relative;height:46px;border-radius:23px;background:#2c2c30;display:flex;align-items:center;gap:8px;padding:0 18px 0 24px;font-size:20px;font-weight:700;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 0 0 1px rgba(255,255,255,.06)}
-.datepill svg{width:22px;height:22px}
-.datepill input,.dchip input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
-.mbody{flex:1;overflow-y:auto;padding:4px 20px 60px}
-.sec{background:#26262a;border:1px solid rgba(255,255,255,.07);border-radius:24px;padding:20px 20px;margin-bottom:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
-.srow{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:36px}
-.sec h4{font-size:16.5px;font-weight:700;color:#e2e2e4}
-.hr{height:1px;background:#3a3a3e;margin:16px 0}
-.tin{width:100%;margin-top:16px;background:transparent;border:2px solid #4a4a4f;border-radius:18px;padding:15px 18px;font-size:17px;outline:none}
-.tin:focus{border-color:#6a6a70}
-.sel{position:relative;display:flex;align-items:center;gap:4px;color:#8e8e93;font-size:16px}
-.sel select{appearance:none;-webkit-appearance:none;background:transparent;border:0;outline:none;color:inherit;font-size:16px;text-align:right;padding-right:2px;cursor:pointer}
-.sel select option{background:#2a2a2d;color:#fff}
-.sel svg{width:18px;height:18px}
-.sel .ic{width:22px;height:22px}
-.seg{display:flex;background:#1c1c1f;border-radius:20px;padding:3px;width:184px}
-.seg button{flex:1;height:36px;border-radius:17px;color:#ddd;font-size:16px}
-.seg .on{background:#5d6066;color:#fff}
-.clrow{display:flex;align-items:center;gap:10px;padding:8px 0}
-.clrow span{flex:1;font-size:16px}
-.clrow.done span{color:#6a6a6f;text-decoration:line-through}
-.clrow .rm{color:#77777c;width:28px;height:28px;display:grid;place-items:center}
-.clrow .rm svg{width:16px;height:16px}
-.cladd{display:flex;align-items:center;gap:10px;margin-top:10px}
-.cladd input{flex:1;background:transparent;border:0;outline:none;font-size:16px;font-weight:600}
-.cladd input::placeholder{color:#6c6c71}
-.cladd button{width:66px;height:44px;border-radius:22px;background:#3a3d40;display:grid;place-items:center;color:#7d8287;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
-.cladd button svg{width:24px;height:24px}
-.qopts{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}
-.qopt{background:#3a3a3f;border-radius:18px;padding:14px 0 12px;display:flex;flex-direction:column;align-items:center;gap:10px;font-size:15px;color:#a8a8ad;border:1.5px solid transparent}
-.qopt.on{background:#46464c;color:#fff}
-.qlabel{color:#8e8e93;font-size:14px}
-.plink{margin-top:16px;border:2px dashed #4a4a4f;border-radius:16px;height:60px;width:100%;display:flex;align-items:center;justify-content:center;gap:10px;color:#8e8e93;font-size:16px}
-.plink svg{width:22px;height:22px}
-.pcard{margin-top:14px;display:flex;align-items:center;gap:10px;background:#1e1e21;border-radius:16px;padding:12px 14px}
-.pcard span{flex:1;font-size:16px}
-.colors{display:flex;justify-content:space-between;margin-top:18px}
-.dot{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:#fff;position:relative}
-.dot svg{width:18px;height:18px}
-.dot.on::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid #55595e}
-.sw{width:68px;height:36px;border-radius:18px;background:#5a5a5f;position:relative;flex:none;transition:.2s}
-.sw::after{content:"";position:absolute;left:3px;top:3px;width:42px;height:30px;border-radius:15px;background:#fff;transition:.2s}
-.sw.on{background:#5d676f}
-.sw.on::after{left:23px}
-.dchip{position:relative;background:#3c3c41;border-radius:22px;padding:9px 18px;font-size:18px}
-.delbtn{width:100%;height:54px;border-radius:20px;background:#2a1a1c;color:#ff6b6b;font-size:17px;font-weight:600;margin-top:4px}
+.mtop{position:absolute;left:0;right:0;top:0;z-index:3;display:flex;align-items:center;justify-content:space-between;padding:var(--top) 20px 14px;
+  background:linear-gradient(rgba(23,23,28,.92) 60%,rgba(23,23,28,0));-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.mtop .cbtn{background:#36363c;border:1px solid rgba(255,255,255,.07);box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}
+.xcirc,.sc{width:25px;height:25px;border-radius:50%;background:#828288;display:grid;place-items:center;color:#36363c;transition:background .25s,transform .3s var(--spring)}
+.xcirc svg{width:14px;height:14px}
+.sc svg{width:15px;height:15px}
+.savebtn.ok .sc{background:#22b3ff;color:#0b2a40;transform:scale(1.08)}
+.datepill{position:relative;height:35px;border-radius:18px;background:#35353b;display:flex;align-items:center;gap:6px;padding:0 13px 0 16px;font-size:17px;font-weight:700;
+  border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}
+.datepill svg{width:18px;height:18px}
+.datepill input,.dchip input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;-webkit-appearance:none;appearance:none}
+.mbody{height:100%;overflow-y:auto;padding:calc(var(--top) + 64px) 20px 60px}
+.sec{background:#333338;border:1px solid rgba(255,255,255,.06);border-radius:18px;padding:18px 20px;margin-bottom:22px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.srow{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:31px}
+.sec h4{font-size:15px;font-weight:700;color:#e5e5ea}
+.hr{height:1px;background:#46464b;margin:15px 0}
+.tin{width:100%;height:55px;margin-top:14px;background:transparent;border:1.75px solid #606066;border-radius:13px;padding:0 16px;font-size:16px;outline:none;transition:border-color .2s}
+.tin:focus{border-color:#7a7a82}
+.tin::placeholder{color:#6c6c72}
+.sel{position:relative;display:flex;align-items:center;gap:5px;color:#7c7c82;font-size:15px}
+.sel.slate{color:#5f6d73}
+.sel select{appearance:none;-webkit-appearance:none;background:transparent;border:0;outline:none;color:inherit;font-size:15px;text-align:right;cursor:pointer;direction:rtl}
+.sel select option{background:#2a2a2d;color:#fff;direction:ltr}
+.sel svg{width:15px;height:15px}
+.sel .ic svg{width:19px;height:19px}
+.seg{position:relative;display:flex;background:#27272c;border-radius:16px;padding:2px;width:160px;height:31px}
+.seg button{flex:1;position:relative;z-index:1;border-radius:14px;color:#e5e5ea;font-size:15px}
+.seg .knob{position:absolute;top:2px;bottom:2px;left:2px;border-radius:14px;background:#5c5c62;transition:transform .35s var(--spring);box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.clrow{display:flex;align-items:center;gap:10px;padding:7px 0}
+.clrow span{flex:1;font-size:15px}
+.clrow .rm{color:#77777c;width:26px;height:26px;display:grid;place-items:center}
+.clrow .rm svg{width:14px;height:14px}
+.cladd{display:flex;align-items:center;gap:10px;margin-top:12px}
+.cladd input{flex:1;background:transparent;border:0;outline:none;font-size:15px;font-weight:600;min-width:0}
+.cladd input::placeholder{color:#5d5d63}
+.cladd button{width:46px;height:33px;border-radius:17px;background:#5b666c;display:grid;place-items:center;color:#83919a;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+.cladd button svg{width:20px;height:20px}
+.qopts{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}
+.qopt{height:79px;background:#4c4c52;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;font-size:14px;color:#c9c9ce;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08);transition:transform .3s var(--spring),background .2s}
+.qopt:active{transform:scale(.93)}
+.qopt.on{color:#8a8a90}
+.qopt.on svg{animation:popIn .35s var(--spring)}
+.qlabel{color:#7c7c82;font-size:14px}
+.plink{margin-top:14px;border:1.5px dashed #5a5a60;border-radius:14px;height:47px;width:100%;display:flex;align-items:center;justify-content:center;gap:9px;color:#8e8e93;font-size:15px}
+.plink svg{width:19px;height:19px}
+.pcard{margin-top:14px;display:flex;align-items:center;gap:10px;background:#28282d;border-radius:14px;padding:11px 14px;animation:popIn .35s var(--ease)}
+.pcard svg{width:18px;height:18px;color:#8e8e93}
+.pcard span{flex:1;font-size:15px}
+.colors{display:flex;justify-content:space-between;margin-top:16px;padding:0 4px}
+.dot{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;color:#fff;position:relative;transition:transform .3s var(--spring)}
+.dot:active{transform:scale(.8)}
+.dot svg{width:13px;height:13px}
+.dot::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:2.5px solid #4e4e54;opacity:0;transform:scale(.6);transition:.3s var(--spring)}
+.dot.on::after{opacity:1;transform:none}
+.sw{width:63px;height:27px;border-radius:14px;background:#69696f;position:relative;flex:none;transition:background .25s}
+.sw::after{content:"";position:absolute;left:2px;top:2px;width:37px;height:23px;border-radius:12px;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.3);transition:transform .38s var(--spring)}
+.sw.on{background:var(--slate)}
+.sw.on::after{transform:translateX(22px)}
+.coll{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s var(--ease)}
+.coll.open{grid-template-rows:1fr}
+.coll>div{overflow:hidden}
+.dchip{position:relative;background:#4e4e53;border-radius:17px;height:34px;padding:0 15px;display:flex;align-items:center;font-size:16.5px}
+.delbtn{width:100%;height:52px;border-radius:18px;background:#3a2023;color:#ff6b6b;font-size:16px;font-weight:600}
 
-/* sheets */
-#sheet .bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:60;animation:fade .2s}
-#sheet .panel{position:fixed;left:0;right:0;bottom:0;max-width:440px;margin:0 auto;z-index:61;background:#1f1f22;border-radius:28px 28px 0 0;
-  padding:12px 20px calc(env(safe-area-inset-bottom) + 24px);max-height:80%;overflow-y:auto;animation:up .28s cubic-bezier(.2,.8,.2,1);border-top:1px solid rgba(255,255,255,.08)}
-.panel .grab{width:38px;height:5px;border-radius:3px;background:#3a3a3d;margin:0 auto 14px}
-.panel h3{font-size:19px;font-weight:700;margin-bottom:14px}
-.prow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 4px;border-bottom:1px solid #2c2c30;font-size:16px;cursor:pointer;width:100%;text-align:left}
+/* ---------- sheets ---------- */
+#sheet .bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:60;animation:fade .25s}
+#sheet .panel{position:fixed;left:0;right:0;bottom:0;max-width:440px;margin:0 auto;z-index:61;background:#1f1f22;border-radius:26px 26px 0 0;
+  padding:10px 20px calc(env(safe-area-inset-bottom) + 24px);max-height:82%;overflow-y:auto;animation:up .4s var(--ease);box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}
+#sheet.closing .bg{animation:fade .22s reverse forwards}
+#sheet.closing .panel{animation:down .25s var(--ease) forwards}
+.panel .grab{width:36px;height:5px;border-radius:3px;background:#3a3a3d;margin:0 auto 14px}
+.panel h3{font-size:18px;font-weight:700;margin-bottom:12px}
+.prow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 4px;border-bottom:1px solid #2c2c30;font-size:15.5px;cursor:pointer;width:100%;text-align:left}
 .prow:last-child{border:0}
-.prow .r{color:#8e8e93;font-size:14px}
+.prow .r{color:var(--sub);font-size:13.5px;text-align:right}
 .prow.red{color:#ff6b6b}
-.prow .rad{width:22px;height:22px;border-radius:50%;border:2px solid #55555a;flex:none}
-.prow .rad.on{border:7px solid #3d8bfd}
+.prow .rad{width:22px;height:22px;border-radius:50%;border:2px solid #55555a;flex:none;transition:.25s var(--spring)}
+.prow .rad.on{border:7px solid var(--blue)}
+.note{color:var(--sub);font-size:12.5px;line-height:1.55;padding:6px 4px 2px}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
-.chips button{padding:8px 14px;border-radius:16px;background:#2c2c30;font-size:15px}
-.chips .on{background:#3d8bfd;color:#fff}
-.help p{color:#a8a8ad;font-size:15px;line-height:1.6;margin-bottom:12px}
+.chips button{padding:8px 14px;border-radius:16px;background:#2c2c30;font-size:14.5px;transition:background .2s}
+.chips .on{background:var(--blue);color:#fff}
+.help p{color:#a8a8ad;font-size:14.5px;line-height:1.6;margin-bottom:12px}
 .hq{display:flex;gap:12px;align-items:flex-start;padding:10px 0}
-.hq b{display:block;font-size:16px;margin-bottom:2px}
-.hq span{color:#8e8e93;font-size:14px}
+.hq b{display:block;font-size:15px;margin-bottom:2px}
+.hq span{color:var(--sub);font-size:13.5px}
 
-#toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 18px);transform:translate(-50%,-20px);opacity:0;background:rgba(50,50,54,.96);
-  color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;z-index:99;transition:.25s;pointer-events:none;white-space:nowrap}
-#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast{position:fixed;left:50%;top:calc(var(--top) + 8px);transform:translate(-50%,-30px) scale(.9);opacity:0;background:rgba(48,48,52,.96);
+  -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;z-index:99;
+  transition:transform .4s var(--spring),opacity .25s;pointer-events:none;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+#toast.show{opacity:1;transform:translate(-50%,0) scale(1)}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
 </head>
 <body>
@@ -247,42 +317,46 @@ svg{display:block}
 <div id="toast"></div>
 <script>
 'use strict';
-/* ---------- constants ---------- */
+/* ================= constants ================= */
 const Q=[
-  {name:'실행',label:'중요함-긴급함',color:'#e5484d',desc:'지금 바로 처리할 일'},
-  {name:'계획',label:'중요함-긴급하지않음',color:'#3d8bfd',desc:'일정을 잡아 꾸준히 할 일'},
-  {name:'위임',label:'중요하지않음-긴급함',color:'#ee9a4d',desc:'빠르게 끝내거나 맡길 일'},
-  {name:'제거',label:'중요하지않음-긴급하지않음',color:'#a1a1a6',desc:'줄이거나 하지 않아도 되는 일'}
+  {name:'실행',label:'중요함-긴급함',color:'#d23b3d',desc:'지금 바로 처리할 일'},
+  {name:'계획',label:'중요함-긴급하지않음',color:'#067ad2',desc:'일정을 잡아 꾸준히 할 일'},
+  {name:'위임',label:'중요하지않음-긴급함',color:'#ec9647',desc:'빠르게 끝내거나 맡길 일'},
+  {name:'제거',label:'중요하지않음-긴급하지않음',color:'#7e7e82',desc:'줄이거나 하지 않아도 되는 일'}
 ];
-const COLORS=['#5f6a72','#c4a98a','#9e6247','#f0dcc0','#8f817a','#1c4870','#d6264f','#5b63f5'];
+const COLORS=['#5c696f','#bfa288','#a6654e','#f0d6c0','#938079','#004569','#e40d4e','#5868fe'];
 const GROUPS=['기본 그룹','업무','개인','공부'];
 const WD=['일','월','화','수','목','금','토'];
+const REMIND=[['none','없음'],['0','정시'],['5','5분 전'],['10','10분 전'],['30','30분 전'],['60','1시간 전'],['1440','하루 전']];
 const KEY='matrix-todo-v1';
 
 const I={
-gear:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="3.6" stroke-dasharray="3.3 3.3"/><circle cx="12" cy="12" r="6.4" fill="currentColor"/><circle cx="12" cy="12" r="2.7" fill="#262628"/></svg>',
+gear:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="3.6" stroke-dasharray="3.3 3.3"/><circle cx="12" cy="12" r="6.4" fill="currentColor"/><circle cx="12" cy="12" r="2.7" fill="#1f1f1f"/></svg>',
 help:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.3 9.3a2.8 2.8 0 1 1 3.7 2.6c-.7.3-1 .8-1 1.5v.5"/><circle cx="12" cy="17.2" r=".5" fill="currentColor"/></svg>',
 layout:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2.5" y="4" width="8" height="6.5" rx="1.6"/><rect x="2.5" y="13.5" width="8" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="8" height="16" rx="1.6"/></svg>',
 filter:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M7 8.8h10M8.6 12.3h6.8M10.4 15.8h3.2"/></svg>',
 plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 4v16M4 12h16"/></svg>',
-check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
-x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg>',
+check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg>',
+xl:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
 chev:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
-updown:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9.5l4-4 4 4M8 14.5l4 4 4-4"/></svg>',
+updown:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9.5l4-4 4 4M8 14.5l4 4 4-4"/></svg>',
 menu:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M7.5 8.8h9M7.5 12h9M7.5 15.2h9"/></svg>',
-grid:'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="2.3"/><rect x="13" y="3" width="8" height="8" rx="2.3"/><rect x="3" y="13" width="8" height="8" rx="2.3"/><rect x="13" y="13" width="8" height="8" rx="2.3"/></svg>',
+grid:'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="2.5" y="2.5" width="8.6" height="8.6" rx="2.4"/><rect x="12.9" y="2.5" width="8.6" height="8.6" rx="2.4"/><rect x="2.5" y="12.9" width="8.6" height="8.6" rx="2.4"/><rect x="12.9" y="12.9" width="8.6" height="8.6" rx="2.4"/></svg>',
 gridO:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>',
 list:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6h12M9 12h12M9 18h12"/><g fill="currentColor" stroke="none"><circle cx="4" cy="6" r="1.4"/><circle cx="4" cy="12" r="1.4"/><circle cx="4" cy="18" r="1.4"/></g></svg>',
 tree:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21v-8.5L5 4M12 12.5L19 4M5 4h4.2M5 4v4.2M19 4h-4.2M19 4v4.2"/></svg>',
 cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="3.5"/><path d="M3 9h18"/><g fill="currentColor" stroke="none"><circle cx="8" cy="13" r="1"/><circle cx="12" cy="13" r="1"/><circle cx="16" cy="13" r="1"/><circle cx="8" cy="17" r="1"/><circle cx="12" cy="17" r="1"/><circle cx="16" cy="17" r="1"/></g></svg>',
-calCheck:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 21H6.5A3.5 3.5 0 0 1 3 17.5v-10A3.5 3.5 0 0 1 6.5 4h11A3.5 3.5 0 0 1 21 7.5V12"/><path d="M3 9h18"/><g fill="currentColor" stroke="none"><circle cx="8" cy="13" r="1"/><circle cx="12" cy="13" r="1"/><circle cx="8" cy="17" r="1"/></g><circle cx="18.5" cy="18.5" r="4.5" fill="currentColor" stroke="none"/><path d="M16.6 18.6l1.4 1.4 2.5-2.6" stroke="#2a2a2d" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+calCheck:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.5 21H6.5A3.5 3.5 0 0 1 3 17.5v-10A3.5 3.5 0 0 1 6.5 4h11A3.5 3.5 0 0 1 21 7.5V12"/><path d="M3 9h18"/><g fill="currentColor" stroke="none"><circle cx="8" cy="13" r="1"/><circle cx="12" cy="13" r="1"/><circle cx="8" cy="17" r="1"/></g><circle cx="18.5" cy="18.5" r="4.5" fill="currentColor" stroke="none"/><path d="M16.6 18.6l1.4 1.4 2.5-2.6" stroke="#1f1f1f" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 chat:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C6.5 3 2 6.6 2 11c0 2.5 1.4 4.7 3.6 6.2L5 21l4.1-2.3c.9.2 1.9.3 2.9.3 5.5 0 10-3.6 10-8s-4.5-8-10-8z"/></svg>',
 link:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3.2-3.2a4.5 4.5 0 0 0-6.4-6.4L12 5.6"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3.2 3.2a4.5 4.5 0 0 0 6.4 6.4L12 18.4"/></svg>',
 send:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>',
-clist:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7l2 2 3-3M4 15l2 2 3-3M13 8h7M13 16h7"/></svg>'
+clist:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7l2 2 3-3M4 15l2 2 3-3M13 8h7M13 16h7"/></svg>',
+bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg>',
+calS:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9.5h18"/><g fill="currentColor" stroke="none"><circle cx="8" cy="14" r="1.3"/><circle cx="12" cy="14" r="1.3"/><circle cx="16" cy="14" r="1.3"/></g></svg>'
 };
 
-/* ---------- helpers ---------- */
+/* ================= helpers ================= */
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pad=n=>String(n).padStart(2,'0');
@@ -294,25 +368,27 @@ const kdate=s=>{const d=parse(s);return `${d.getMonth()+1}월 ${d.getDate()}일`
 const dotted=s=>{const d=parse(s);return `${d.getFullYear()}. ${d.getMonth()+1}. ${d.getDate()}.`};
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const addDays=(s,n)=>{const d=parse(s);d.setDate(d.getDate()+n);return ymd(d)};
+const buzz=()=>{try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}};
 
 function newTask(o={}){const t=today();return Object.assign({id:uid(),title:'',group:GROUPS[0],store:'matrix',type:'todo',checklist:[],quadrant:0,
-  parentId:null,color:COLORS[0],repeat:false,repeatType:'weekly',hasDate:true,start:t,end:t,hasTime:false,time:'09:00',done:false,created:Date.now()},o)}
-
+  parentId:null,color:COLORS[0],repeat:false,repeatType:'weekly',hasDate:true,start:t,end:t,hasTime:false,time:'09:00',remind:'none',done:false,created:Date.now()},o)}
+function defSettings(){return {hideDone:false,group:'all',sort:'created',compact:false}}
 function load(){
-  try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&Array.isArray(s.tasks)){s.settings=Object.assign(defSettings(),s.settings);s.chats=s.chats||[];return s}}catch(e){}
+  try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&Array.isArray(s.tasks)){
+    s.settings=Object.assign(defSettings(),s.settings);s.chats=s.chats||[];s.notified=s.notified||{};
+    s.tasks.forEach(t=>{if(COLORS.indexOf(t.color)<0)t.color=COLORS[0];if(!t.remind)t.remind='none'});return s}}catch(e){}
   const t=today();
   return {tasks:[
     newTask({title:'숙제',quadrant:0,created:1}),
-    newTask({title:'운동 계획 세우기',quadrant:1,start:addDays(t,2),end:addDays(t,2),color:COLORS[7],created:2}),
+    newTask({title:'운동 계획 세우기',quadrant:1,start:addDays(t,2),end:addDays(t,2),created:2}),
     newTask({title:'택배 반품 신청',quadrant:2,hasDate:false,created:3}),
-  ],chats:[],settings:defSettings()};
+  ],chats:[],notified:{},settings:defSettings()};
 }
-function defSettings(){return {hideDone:false,group:'all',sort:'created',compact:false}}
 let S=load();
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
-const now=new Date();
-let ui={tab:'matrix',y:now.getFullYear(),m:now.getMonth(),sel:today(),fab:false,chatSel:null};
-let draft=null,editingId=null;
+const now0=new Date();
+let ui={tab:'matrix',y:now0.getFullYear(),m:now0.getMonth(),sel:today(),fab:false,chatSel:null,enter:true,pop:null,flash:null,mdir:0,selPop:false,sheetAnim:false};
+let draft=null,editingId=null,editorFirst=false;
 
 function occursOn(t,ds){
   if(!t.hasDate)return false;
@@ -328,82 +404,88 @@ function visible(list){
   const s=S.settings;
   const r=list.filter(t=>(!s.hideDone||!t.done)&&(s.group==='all'||t.group===s.group));
   const by={created:(a,b)=>a.created-b.created,
-    date:(a,b)=>(a.hasDate?a.start:'9999').localeCompare(b.hasDate?b.start:'9999')||a.created-b.created,
+    date:(a,b)=>(a.hasDate?a.start+(a.hasTime?a.time:''):'9999').localeCompare(b.hasDate?b.start+(b.hasTime?b.time:''):'9999')||a.created-b.created,
     name:(a,b)=>a.title.localeCompare(b.title,'ko'),
     undone:(a,b)=>(a.done-b.done)||a.created-b.created};
   return r.sort(by[s.sort]||by.created);
 }
-function qIcon(q,active=true,size=26){
+/* mode: 'fill' colored cell | 'muted' light outline | 'slate' slate fill | 'none' all outline */
+function qIcon(q,mode='fill',size=20,sw=1.7){
   const pos=[[0,0],[1,0],[0,1],[1,1]];
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24">${pos.map(([x,y],i)=>{
-    const me=i===q;const st=me?(active?Q[q].color:'#9aa0a6'):'#4c5054';
-    return `<rect x="${1.5+x*11}" y="${1.5+y*11}" width="9.5" height="9.5" rx="2.4" fill="${me&&active?Q[q].color:'none'}" stroke="${st}" stroke-width="1.7"/>`}).join('')}</svg>`;
+    const me=i===q;let fill='none',st='#4a4e52';
+    if(me&&mode==='fill'){fill=st=Q[q].color}
+    else if(me&&mode==='slate'){fill=st='#5f6d73'}
+    else if(me&&mode==='muted'){st='#7d858b'}
+    if(mode==='slate'&&!me)st='#5d5d63';if(mode==='none')st='#5d5d63';
+    return `<rect x="${1.4+x*11.2}" y="${1.4+y*11.2}" width="${fill==='none'?9.4:10}" height="${fill==='none'?9.4:10}" rx="2.4" fill="${fill}" stroke="${st}" stroke-width="${fill==='none'?sw:0}" ${fill!=='none'?`transform="translate(-.3 -.3)"`:''}/>`}).join('')}</svg>`;
 }
-const ck=(t,sm)=>`<button class="ck ${sm?'sm':''} ${t.done?'on':''}" data-a="toggle" data-id="${t.id}" aria-label="완료">${I.check}</button>`;
-function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),1600)}
+const ck=(t,sm)=>`<button class="ck ${sm?'sm':''} ${t.done?'on':''} ${ui.pop===t.id?'pop':''}" data-a="toggle" data-id="${t.id}" aria-label="완료">${I.check}</button>`;
+const ttl=t=>`<span class="${t.done?'strike':''} ${t.done&&ui.pop===t.id?'anim':''}">${t.color!==COLORS[0]?`<span class="qdot" style="background:${t.color}"></span>`:''}${esc(t.title)}</span>`;
+function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),1800)}
 
-/* ---------- screens ---------- */
-function taskCard(t){
-  const cl=t.checklist.length?`<span class="chip">${I.clist} ${t.checklist.filter(c=>c.done).length}/${t.checklist.length}</span>`:'';
-  const date=t.hasDate?`<span class="chip">${I.cal} ${md(t.start)}${t.end!==t.start?' – '+md(t.end):''}${t.hasTime?' '+t.time:''}</span>`:'';
-  return `<div class="tcard card ${t.done?'done':''}" data-a="open" data-id="${t.id}">
+/* ================= screens ================= */
+function taskCard(t,i=0){
+  const cl=t.checklist.length?`<span class="chip">${I.clist}${t.checklist.filter(c=>c.done).length}/${t.checklist.length}</span>`:'';
+  const date=t.hasDate?`<span class="chip">${I.calS}${md(t.start)}${t.end!==t.start?' – '+md(t.end):''}${t.hasTime?' '+t.time:''}</span>`:'';
+  const extra=(t.type==='event'?'<span class="chip">일정</span>':'')+(t.repeat?'<span class="chip">반복</span>':'')+(t.remind!=='none'&&t.hasTime?`<span class="chip">${I.bell}</span>`:'');
+  return `<div class="tcard st ${ui.flash===t.id?'flash':''}" style="--i:${i}" data-a="open" data-id="${t.id}">
     ${ck(t)}
-    <div class="tcm"><div class="ttl">${t.color!==COLORS[0]?`<span class="qdot" style="background:${t.color}"></span>`:''}${esc(t.title)}</div>
-    ${date||cl||t.type==='event'?`<div class="meta">${date}${cl}${t.type==='event'?'<span class="chip">일정</span>':''}${t.repeat?'<span class="chip">반복</span>':''}</div>`:''}</div>
-    ${qIcon(t.quadrant,!t.done,34)}
+    <div class="tcm"><div class="ttl">${ttl(t)}</div>${date||cl||extra?`<div class="meta">${date}${cl}${extra}</div>`:''}</div>
+    ${qIcon(t.quadrant,t.done?'muted':'fill',21)}
   </div>`;
 }
 
+function hdrMain(extra=''){return `<div class="hdr st">
+  <div class="pillgrp glass"><button class="ib press" data-a="settings">${I.gear}</button><button class="ib press" data-a="help">${I.help}</button></div>
+  <div class="sp"></div>${extra}
+  <button class="cbtn glass press" data-a="filter">${I.filter}</button>
+  <button class="cbtn glass press" data-a="new">${I.plus}</button></div>`}
+
 function matrix(){
   const ts=visible(S.tasks.filter(t=>t.store==='matrix'));
-  const quad=q=>{
+  const quad=(q,r2)=>{
     const items=ts.filter(t=>t.quadrant===q);
-    return `<div class="quad" data-a="new" data-q="${q}">
-      ${S.settings.compact?`<div class="qhead">${qIcon(q,true,18)}<span>${Q[q].name}</span><em>${items.filter(t=>!t.done).length}</em></div>`:''}
-      ${items.map(t=>`<div class="qi ${t.done?'done':''}" data-a="open" data-id="${t.id}">${ck(t,1)}<span class="qt">${t.color!==COLORS[0]?`<span class="qdot" style="background:${t.color}"></span>`:''}${esc(t.title)}${t.checklist.length?` <small>${t.checklist.filter(c=>c.done).length}/${t.checklist.length}</small>`:''}</span></div>`).join('')}
+    return `<div class="quad st ${r2?'r2':''}" style="--i:${q+1};--hc:${Q[q].color}" data-a="new" data-q="${q}">
+      ${S.settings.compact?`<div class="qhead">${qIcon(q,'fill',15)}<span>${Q[q].name}</span><em>${items.filter(t=>!t.done).length}</em></div>`:''}
+      ${items.map(t=>`<div class="qi ${ui.flash===t.id?'flash':''}" data-a="open" data-id="${t.id}">${ck(t,1)}<span class="qt">${ttl(t)}${t.checklist.length?` <small>${t.checklist.filter(c=>c.done).length}/${t.checklist.length}</small>`:''}</span></div>`).join('')}
     </div>`};
-  return `<div class="hdr">
-      <div class="pillgrp"><button class="cbtn" data-a="settings">${I.gear}</button><button class="cbtn" data-a="help">${I.help}</button></div>
-      <div class="sp"></div>
-      <button class="cbtn" data-a="layout">${I.layout}</button>
-      <button class="cbtn" data-a="filter">${I.filter}</button>
-      <button class="cbtn" data-a="new">${I.plus}</button>
-    </div>
+  return `${hdrMain(`<button class="cbtn glass press" data-a="layout">${I.layout}</button>`)}
     <div class="mx">
-      <div></div><div class="colh">긴급함</div><div class="colh">긴급하지않음</div>
-      <div class="rowh">중요함</div>${quad(0)}${quad(1)}
-      <div class="rowh">중요하지않음</div>${quad(2)}${quad(3)}
+      <div></div><div class="colh st">긴급함</div><div class="colh st">긴급하지않음</div>
+      <div class="rowh st">중요함</div>${quad(0)}${quad(1)}
+      <div class="rowh r2 st">중요하지않음</div>${quad(2,1)}${quad(3,1)}
     </div>`;
 }
 
 function tree(){
-  const all=visible(S.tasks);const ids=new Set(all.map(t=>t.id));
-  const node=(t,d)=>`<div class="tnode">${taskCard(t)}${d<8?all.filter(c=>c.parentId===t.id).map(c=>node(c,d+1)).join(''):''}</div>`;
+  const all=visible(S.tasks);const ids=new Set(all.map(t=>t.id));let n=0;
+  const node=(t,d)=>`<div class="tnode">${taskCard(t,n++)}${d<8?all.filter(c=>c.parentId===t.id).map(c=>node(c,d+1)).join(''):''}</div>`;
   const roots=all.filter(t=>!t.parentId||!ids.has(t.parentId));
-  return `<div class="hdr"><button class="cbtn" data-a="settings">${I.gear}</button><div class="sp"></div>
-      <button class="cbtn" data-a="filter">${I.filter}</button><button class="cbtn" data-a="new">${I.plus}</button></div>
-    ${roots.length?roots.map(t=>node(t,0)).join(''):'<div class="empty">할 일이 없어요<br>+ 버튼으로 새 할 일을 추가하세요<br>할 일 편집에서 ‘상위 할 일’을 연결하면 트리로 묶여요</div>'}`;
+  return `<div class="hdr st"><button class="cbtn glass press" data-a="settings">${I.gear}</button><div class="sp"></div>
+      <button class="cbtn glass press" data-a="filter">${I.filter}</button><button class="cbtn glass press" data-a="new">${I.plus}</button></div>
+    ${roots.length?roots.map(t=>node(t,0)).join(''):'<div class="empty st">할 일이 없어요<br>+ 버튼으로 새 할 일을 추가하세요<br>할 일 편집에서 ‘상위 할 일’을 연결하면 트리로 묶여요</div>'}`;
 }
 
 function dashboard(){
   const t=today();
   const todays=S.tasks.filter(x=>occursOn(x,t));
   const dn=todays.filter(x=>x.done).length;const pct=todays.length?Math.round(dn/todays.length*100):0;
-  const C=2*Math.PI*31;
+  const C=2*Math.PI*29;
   const overdue=visible(S.tasks.filter(x=>!x.done&&x.hasDate&&!x.repeat&&x.end<t));
   const upcoming=S.tasks.filter(x=>!x.done&&x.hasDate&&x.start>t&&x.start<=addDays(t,14)).sort((a,b)=>a.start.localeCompare(b.start));
   const nodate=visible(S.tasks.filter(x=>!x.hasDate));
-  const d=new Date();
+  const d=new Date();let n=3;
   const tiles=Q.map((q,i)=>{const all=S.tasks.filter(x=>x.quadrant===i&&x.store==='matrix');const left=all.filter(x=>!x.done).length;
     const p=all.length?Math.round((all.length-left)/all.length*100):0;
-    return `<div class="qtile card" data-a="gomatrix"><div class="top">${qIcon(i,true,20)}${q.name}</div><div class="lbl">${q.label}</div>
+    return `<div class="qtile st press" style="--i:${i+1}" data-a="gomatrix"><div class="top">${qIcon(i,'fill',18)}${q.name}</div><div class="lbl">${q.label}</div>
       <div class="num">${left}<small> / ${all.length} 남음</small></div><div class="bar"><i style="width:${p}%;background:${q.color}"></i></div></div>`}).join('');
-  const sec=(title,list)=>list.length?`<div class="sect">${title}</div>${list.map(taskCard).join('')}`:'';
-  return `<div class="hdr"><button class="cbtn" data-a="settings">${I.gear}</button><div class="htitle">대시보드</div>
-      <button class="cbtn" data-a="new">${I.plus}</button></div>
-    <div class="hero card">
-      <div class="ring"><svg width="74" height="74" viewBox="0 0 74 74"><circle cx="37" cy="37" r="31" fill="none" stroke="#333336" stroke-width="8"/>
-        <circle cx="37" cy="37" r="31" fill="none" stroke="#3d8bfd" stroke-width="8" stroke-linecap="round" stroke-dasharray="${C*pct/100} ${C}" transform="rotate(-90 37 37)"/></svg><b>${pct}%</b></div>
+  const sec=(title,list)=>list.length?`<div class="sect st" style="--i:${n++}">${title}</div>${list.map(x=>taskCard(x,n++)).join('')}`:'';
+  return `<div class="hdr st"><button class="cbtn glass press" data-a="settings">${I.gear}</button><div class="htitle">대시보드</div><div class="sp"></div>
+      <button class="cbtn glass press" data-a="new">${I.plus}</button></div>
+    <div class="hero st">
+      <div class="ring"><svg width="70" height="70" viewBox="0 0 70 70"><circle cx="35" cy="35" r="29" fill="none" stroke="#333336" stroke-width="7"/>
+        <circle class="arc" style="--c:${C}" cx="35" cy="35" r="29" fill="none" stroke="#0a95ff" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-pct/100)}" transform="rotate(-90 35 35)"/></svg><b>${pct}%</b></div>
       <div><h2>${d.getMonth()+1}월 ${d.getDate()}일 ${WD[d.getDay()]}요일</h2>
       <p>${todays.length?`오늘 할 일 ${todays.length}개 중 ${dn}개 완료`:'오늘은 여유로운 날이에요'}</p></div>
     </div>
@@ -413,28 +495,25 @@ function dashboard(){
 
 function calendar(){
   const {y,m}=ui;const first=new Date(y,m,1);const t=today();
-  const cells=[];for(let i=0;i<42;i++){cells.push(new Date(y,m,1-first.getDay()+i))}
+  const cells=[];for(let i=0;i<42;i++)cells.push(new Date(y,m,1-first.getDay()+i));
   const pool=visible(S.tasks);
   const grid=cells.map(d=>{
     const ds=ymd(d);const list=pool.filter(x=>occursOn(x,ds));const dow=d.getDay();
-    const cls=['cell',d.getMonth()!==m?'out':'',dow===0?'sun':'',dow===6?'sat':'',ds===t?'today':'',ds===ui.sel&&ds!==t?'sel':''].join(' ');
-    return `<div class="${cls}" data-a="day" data-d="${ds}">${d.getDate()}<div class="bars">${list.slice(0,3).map(x=>`<i style="background:${x.color};opacity:${x.done?.4:1}"></i>`).join('')}${list.length>3?`<div class="more">+${list.length-3}</div>`:''}</div></div>`;
+    const cls=['cell',d.getMonth()!==m?'out':'',dow===0?'sun':'',ds===t?'today':'',ds===ui.sel&&ds!==t?'sel':'',ds===ui.sel&&ui.selPop?'pop':''].join(' ');
+    return `<div class="${cls}" data-a="day" data-d="${ds}">${d.getDate()}<div class="bars">${list.slice(0,3).map(x=>`<i style="${x.color!==COLORS[0]?'background:'+x.color+';':''}opacity:${x.done?.35:1}"></i>`).join('')}${list.length>3?`<div class="more">+${list.length-3}</div>`:''}</div></div>`;
   }).join('');
   const dayList=visible(S.tasks.filter(x=>occursOn(x,ui.sel)));
   const sd=parse(ui.sel);
-  const body=dayList.length?`<div class="dlist">${dayList.map(x=>`<div class="drow ${x.done?'done':''}" data-a="open" data-id="${x.id}">
+  const body=dayList.length?`<div class="dlist ${ui.sheetAnim?'anim':''}">${dayList.map(x=>`<div class="drow ${ui.flash===x.id?'flash':''}" data-a="open" data-id="${x.id}">
       ${x.type==='event'?`<span class="evdot" style="background:${x.color}"></span>`:ck(x)}
-      <span class="ttl">${esc(x.title)}</span>${x.hasTime?`<span class="tm">${x.time}</span>`:''}${qIcon(x.quadrant,!x.done,24)}</div>`).join('')}</div>`
-    :`<h3>${ui.sel===t?'오늘은':kdate(ui.sel)+'은'} 여유로운 날이에요</h3><p class="sub">편안한 휴식을 취하거나<br>새로운 계획을 세워보세요</p>`;
-  return `<div class="hdr"><div class="pillgrp"><button class="cbtn" data-a="settings">${I.gear}</button><button class="badge" data-a="cal-today">${new Date().getDate()}</button></div>
-      <div class="htitle" data-a="cal-today">${y}년 ${m+1}월</div>
-      <button class="cbtn" data-a="filter">${I.filter}</button><button class="cbtn" data-a="new" data-d="${ui.sel}">${I.plus}</button></div>
-    <div class="wk">${WD.map((w,i)=>`<div class="${i===0?'sun':i===6?'sat':''}">${w}</div>`).join('')}</div>
-    <div class="cgrid" id="cgrid">${grid}</div>
-    <div class="daysheet"><div class="grab"></div>${body}
-      <div class="dacts"><button class="cbtn" data-a="sort">${I.menu}</button><button class="cbtn" data-a="cal-today">${I.calCheck}</button>
-      <button class="addpill" data-a="new" data-d="${ui.sel}" data-ev="1">${sd.getMonth()+1}월 ${sd.getDate()}일에 일정 추가 ${I.plus}</button></div>
-    </div>`;
+      <span class="ttl">${ttl(x)}</span>${x.hasTime?`<span class="tm">${x.time}</span>`:''}${qIcon(x.quadrant,x.done?'muted':'fill',20)}</div>`).join('')}</div>`
+    :`<div class="${ui.sheetAnim?'anim':''}"><h3>${ui.sel===t?'오늘은':kdate(ui.sel)+'은'} 여유로운 날이에요</h3><p class="sub">편안한 휴식을 취하거나<br>새로운 계획을 세워보세요</p></div>`;
+  return `<div class="hdr st"><div class="pillgrp glass"><button class="ib press" data-a="settings">${I.gear}</button><button class="badge press" data-a="cal-today">${new Date().getDate()}</button></div>
+      <div class="htitle" data-a="cal-today">${y}년 ${m+1}월</div><div class="sp"></div>
+      <button class="cbtn glass press" data-a="filter">${I.filter}</button><button class="cbtn glass press" data-a="new" data-d="${ui.sel}">${I.plus}</button></div>
+    <div class="wk st">${WD.map((w,i)=>`<div class="${i===0?'sun':i===6?'sat':''}">${w}</div>`).join('')}</div>
+    <div class="cgwrap st"><div class="cgrid ${ui.mdir?'ms':''}" style="--dir:${ui.mdir}" id="cgrid">${grid}</div></div>
+    <div class="daysheet st" style="--i:2">${body}</div>`;
 }
 
 function chat(){
@@ -442,49 +521,73 @@ function chat(){
   const msgs=S.chats.map(c=>{
     const d=new Date(c.ts);const ds=ymd(d);let sep='';
     if(ds!==last){last=ds;sep=`<div class="dsep">${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 ${WD[d.getDay()]}요일</div>`}
-    return `${sep}<div class="mrow"><div class="bub" data-a="msg" data-id="${c.id}">${esc(c.text)}</div>
+    return `${sep}<div class="mrow"><div class="bub ${ui.flash===c.id?'flash':''}" data-a="msg" data-id="${c.id}">${esc(c.text)}</div>
       ${ui.chatSel===c.id?`<div class="macts"><button data-a="msg-task" data-id="${c.id}">할 일로 추가</button><button data-a="msg-copy" data-id="${c.id}">복사</button><button class="del" data-a="msg-del" data-id="${c.id}">삭제</button></div>`
       :`<div class="mtime">${pad(d.getHours())}:${pad(d.getMinutes())}</div>`}</div>`;
   }).join('');
-  return `<div class="hdr"><button class="cbtn" data-a="settings">${I.gear}</button><div class="htitle">나와의 채팅</div><div style="width:50px"></div></div>
-    <div class="msgs" id="msgs">${msgs||'<div class="empty">나에게 메모를 남겨보세요<br>말풍선을 누르면 할 일로 바꿀 수 있어요</div>'}</div>
-    <div class="cin"><input id="chatIn" placeholder="메모 입력" enterkeyhint="send" autocomplete="off"><button class="send" data-a="chat-send">${I.send}</button></div>`;
+  return `<div class="hdr st"><button class="cbtn glass press" data-a="settings">${I.gear}</button><div class="htitle">나와의 채팅</div></div>
+    <div class="msgs st" id="msgs">${msgs||'<div class="empty">나에게 메모를 남겨보세요<br>말풍선을 누르면 할 일로 바꿀 수 있어요</div>'}</div>
+    <div class="cin"><input id="chatIn" placeholder="메모 입력" enterkeyhint="send" autocomplete="off"><button class="send press" data-a="chat-send">${I.send}</button></div>`;
 }
 
 const SCREENS={matrix,dashboard,tree,calendar,chat};
 const TABS=[['matrix','Matrix',I.grid],['dashboard','대시보드',I.list],['tree','트리',I.tree],['calendar','캘린더',I.cal],['chat','나와의채팅',I.chat]];
 
-function render(){
-  const keepChat=$('#chatIn')?.value||'';
-  const showFab=ui.tab==='matrix'||ui.tab==='tree'||ui.tab==='dashboard';
-  $('#app').innerHTML=`<div class="screen ${ui.tab}">${SCREENS[ui.tab]()}</div>
-    ${showFab&&ui.fab?'<div class="dimmer" data-a="fab"></div>':''}
-    ${showFab?`<button class="fab fab-l" data-a="sort">${I.menu}</button><button class="fab fab-r" data-a="fab">${ui.fab?I.x:I.grid}</button>`:''}
-    ${showFab&&ui.fab?`<div class="dial">${[0,1,2,3].map(q=>`<button data-a="new" data-q="${q}" title="${Q[q].name}">${qIcon(q,true,36)}</button>`).join('')}</div>`:''}
-    <nav class="tabbar">${TABS.map(([k,l,ic])=>`<button class="tab ${ui.tab===k?'on':''}" data-a="tab" data-v="${k}">${ic}<span>${l}</span></button>`).join('')}</nav>`;
-  if(ui.tab==='chat'){const m=$('#msgs');m.scrollTop=m.scrollHeight;const ci=$('#chatIn');ci.value=keepChat}
+function floating(){
+  const t=ui.tab;let h='';
+  if(t==='matrix'||t==='tree'||t==='dashboard'){
+    if(ui.fab)h+=`<div class="catcher" data-a="fab"></div><div class="dial m">${[0,1,2,3].map(q=>`<button class="press" data-a="new" data-q="${q}" aria-label="${Q[q].name}">${qIcon(q,'fill',36,1.6)}</button>`).join('')}</div>`;
+    h+=`<button class="fab fab-l glass press" data-a="sort">${I.menu}</button><button class="fab fab-r glass press ${ui.fab?'open':''}" data-a="fab">${ui.fab?I.xl:I.grid}</button>`;
+  }
+  if(t==='calendar'){
+    const sd=parse(ui.sel);
+    if(ui.fab)h+=`<div class="catcher" data-a="fab"></div><div class="dial">${[0,1,2,3].map(q=>`<button class="press" data-a="new" data-q="${q}" data-d="${ui.sel}" aria-label="${Q[q].name}">${qIcon(q,'fill',36,1.6)}</button>`).join('')}</div>`;
+    h+=`<div class="dacts"><button class="pb glass press" data-a="sort">${I.menu}</button><button class="pb glass press" data-a="cal-today">${I.calCheck}</button>
+      <button class="addpill glass press ${ui.fab?'open':''}" data-a="fab">${sd.getMonth()+1}월 ${sd.getDate()}일에 일정 추가 ${I.plus}</button></div>`;
+  }
+  return h;
 }
 
-/* ---------- editor ---------- */
+function render(dir){
+  const app=$('#app');
+  const keepChat=$('#chatIn')?.value||'';
+  const keepScroll=!dir&&$('#app .screen:not(.out)')?.scrollTop||0;
+  const old=dir?$('#app .screen:not(.out)'):null;
+  const ti=TABS.findIndex(x=>x[0]===ui.tab);
+  app.innerHTML=`<div class="screen ${ui.tab} ${ui.enter?'enter':''} ${dir?'in':''}" style="--dir:${dir||1}">${SCREENS[ui.tab]()}</div>
+    ${floating()}
+    <nav class="tabbar"><span class="tabpill" style="left:calc(3.5px + ${ti} * (100% - 7px) / 5);width:calc((100% - 7px) / 5)"></span>${TABS.map(([k,l,ic])=>`<button class="tab ${ui.tab===k?'on':''}" data-a="tab" data-v="${k}">${ic}<span>${l}</span></button>`).join('')}</nav>`;
+  const scr=$('#app .screen');
+  if(old){old.classList.remove('in','enter');old.classList.add('out');old.style.setProperty('--dir',dir);app.prepend(old);setTimeout(()=>old.remove(),320)}
+  else scr.scrollTop=keepScroll;
+  if(ui.tab==='chat'){const m=$('#msgs');m.scrollTop=m.scrollHeight;$('#chatIn').value=keepChat}
+  ui.enter=false;ui.pop=null;ui.flash=null;ui.mdir=0;ui.selPop=false;ui.sheetAnim=false;
+}
+
+/* ================= editor ================= */
 function openEditor(t,preset={}){
   editingId=t?t.id:null;
   draft=JSON.parse(JSON.stringify(t||newTask(preset)));
-  ui.fab=false;render();renderEditor(true);
+  ui.fab=false;render();editorFirst=true;renderEditor();
 }
 function closeEditor(){
   const w=$('#modal .mwrap');draft=null;editingId=null;
-  if(w){w.classList.add('closing');setTimeout(()=>{if(!draft)$('#modal').innerHTML=''},210)}
+  if(w){w.classList.remove('anim');w.classList.add('closing');setTimeout(()=>{if(!draft)$('#modal').innerHTML=''},290)}
 }
-function renderEditor(first){
+function seg(opts,cur,act,width){
+  const i=Math.max(0,opts.findIndex(o=>o[0]===cur));
+  return `<div class="seg" ${width?`style="width:${width}px"`:''}><span class="knob" style="width:calc((100% - 4px) / ${opts.length});transform:translateX(${i*100}%)"></span>${opts.map(([k,l])=>`<button data-a="${act}" data-v="${k}">${l}</button>`).join('')}</div>`;
+}
+function renderEditor(){
   const m=$('#modal');if(!draft){m.innerHTML='';return}
   const sc=m.querySelector('.mbody')?.scrollTop||0;
   const d=draft;const ds=d.hasDate?d.start:today();
   const parent=d.parentId&&S.tasks.find(t=>t.id===d.parentId);
-  m.innerHTML=`<div class="mwrap ${first?'anim':''}">
+  m.innerHTML=`<div class="mwrap ${editorFirst?'anim':''}">
   <div class="mtop">
-    <button class="cbtn" data-a="e-close"><span class="xcirc">${I.x}</span></button>
-    <label class="datepill">${kdate(ds)} ${I.chev}<input type="date" data-in="start" value="${ds}"></label>
-    <button class="cbtn savebtn ${d.title.trim()?'ok':''}" data-a="e-save"><span class="sc">${I.check}</span></button>
+    <button class="cbtn press" data-a="e-close" aria-label="닫기"><span class="xcirc">${I.x}</span></button>
+    <label class="datepill press">${kdate(ds)} ${I.chev}<input type="date" data-in="start" value="${ds}"></label>
+    <button class="cbtn press savebtn ${d.title.trim()?'ok':''}" data-a="e-save" aria-label="저장"><span class="sc">${I.check}</span></button>
   </div>
   <div class="mbody">
     <div class="sec"><div class="srow"><h4>할 일 내용</h4>
@@ -492,114 +595,195 @@ function renderEditor(first){
       <input class="tin" data-in="title" placeholder="무엇을 해야 하나요?" value="${esc(d.title)}" maxlength="200" enterkeyhint="done"></div>
 
     <div class="sec"><div class="srow"><h4>저장 위치</h4>
-      <label class="sel"><span class="ic">${I.gridO}</span><select data-in="store"><option value="matrix" ${d.store==='matrix'?'selected':''}>매트릭스</option><option value="calendar" ${d.store==='calendar'?'selected':''}>캘린더만</option></select>${I.updown}</label></div>
+      <label class="sel slate"><span class="ic">${I.gridO}</span><select data-in="store"><option value="matrix" ${d.store==='matrix'?'selected':''}>매트릭스</option><option value="calendar" ${d.store==='calendar'?'selected':''}>캘린더만</option></select>${I.updown}</label></div>
       <div class="hr"></div>
-      <div class="srow"><h4>구분</h4><div class="seg"><button class="${d.type==='todo'?'on':''}" data-a="e-type" data-v="todo">할일</button><button class="${d.type==='event'?'on':''}" data-a="e-type" data-v="event">일정</button></div></div></div>
+      <div class="srow"><h4>구분</h4>${seg([['todo','할일'],['event','일정']],d.type,'e-type')}</div></div>
 
     <div class="sec"><h4>체크리스트</h4>
-      ${d.checklist.map((c,i)=>`<div class="clrow ${c.done?'done':''}"><button class="ck sm ${c.done?'on':''}" data-a="e-cl" data-i="${i}">${I.check}</button><span>${esc(c.text)}</span><button class="rm" data-a="e-cl-del" data-i="${i}">${I.x}</button></div>`).join('')}
-      <div class="cladd"><input id="clIn" placeholder="새 항목 추가..." enterkeyhint="done" maxlength="120"><button data-a="e-cl-add">${I.plus}</button></div></div>
+      ${d.checklist.map((c,i)=>`<div class="clrow"><button class="ck sm ${c.done?'on':''}" data-a="e-cl" data-i="${i}">${I.check}</button><span class="${c.done?'strike':''}">${esc(c.text)}</span><button class="rm" data-a="e-cl-del" data-i="${i}">${I.x}</button></div>`).join('')}
+      <div class="cladd"><input id="clIn" placeholder="새 항목 추가..." enterkeyhint="done" maxlength="120"><button class="press" data-a="e-cl-add" aria-label="추가">${I.plus}</button></div></div>
 
     <div class="sec"><div class="srow"><h4>매트릭스 영역</h4><span class="qlabel">${Q[d.quadrant].label}</span></div>
-      <div class="qopts">${Q.map((q,i)=>`<button class="qopt ${i===d.quadrant?'on':''}" data-a="e-q" data-v="${i}">${qIcon(i,i===d.quadrant,34)}${q.name}</button>`).join('')}</div></div>
+      <div class="qopts">${Q.map((q,i)=>`<button class="qopt ${i===d.quadrant?'on':''}" data-a="e-q" data-v="${i}">${qIcon(i,i===d.quadrant?'slate':'none',28,1.5)}${q.name}</button>`).join('')}</div></div>
 
     <div class="sec"><h4>상위 할 일</h4>
-      ${parent?`<div class="pcard">${I.link}<span>${esc(parent.title)}</span><button class="rm" data-a="e-unparent" style="color:#8e8e93">${I.x}</button></div>`
-      :`<button class="plink" data-a="e-parent">${I.link} 상위 할 일 연결하기</button>`}</div>
+      ${parent?`<div class="pcard">${I.link}<span>${esc(parent.title)}</span><button class="rm" data-a="e-unparent" style="color:#8e8e93;width:24px;height:24px">${I.x}</button></div>`
+      :`<button class="plink press" data-a="e-parent">${I.link} 상위 할 일 연결하기</button>`}</div>
 
     <div class="sec"><h4>컬러 그룹</h4>
       <div class="colors">${COLORS.map(c=>`<button class="dot ${c===d.color?'on':''}" style="background:${c}" data-a="e-color" data-v="${c}">${c===d.color?I.check:''}</button>`).join('')}</div></div>
 
-    <div class="sec"><div class="srow"><h4>반복</h4><button class="sw ${d.repeat?'on':''}" data-a="e-sw" data-v="repeat"></button></div>
-      ${d.repeat?`<div class="hr"></div><div class="srow"><h4 style="font-weight:500">주기</h4><div class="seg" style="width:210px">${[['daily','매일'],['weekly','매주'],['monthly','매월']].map(([k,l])=>`<button class="${d.repeatType===k?'on':''}" data-a="e-rep" data-v="${k}">${l}</button>`).join('')}</div></div>`:''}</div>
+    <div class="sec"><div class="srow"><h4>반복</h4><button class="sw ${d.repeat?'on':''}" data-a="e-sw" data-v="repeat" aria-label="반복"></button></div>
+      <div class="coll ${d.repeat?'open':''}"><div><div class="hr"></div><div class="srow"><h4 style="font-weight:500">주기</h4>${seg([['daily','매일'],['weekly','매주'],['monthly','매월']],d.repeatType,'e-rep',190)}</div></div></div></div>
 
-    <div class="sec"><div class="srow"><h4>날짜 지정</h4><button class="sw ${d.hasDate?'on':''}" data-a="e-sw" data-v="hasDate"></button></div>
-      ${d.hasDate?`<div class="hr"></div>
+    <div class="sec"><div class="srow"><h4>날짜 지정</h4><button class="sw ${d.hasDate?'on':''}" data-a="e-sw" data-v="hasDate" aria-label="날짜 지정"></button></div>
+      <div class="coll ${d.hasDate?'open':''}"><div><div class="hr"></div>
       <div class="srow"><h4>시작일</h4><label class="dchip">${dotted(d.start)}<input type="date" data-in="start" value="${d.start}"></label></div>
       <div class="srow" style="margin-top:12px"><h4>종료일</h4><label class="dchip">${dotted(d.end)}<input type="date" data-in="end" value="${d.end}"></label></div>
       <div class="hr"></div>
-      <div class="srow"><h4>시간 설정</h4><button class="sw ${d.hasTime?'on':''}" data-a="e-sw" data-v="hasTime"></button></div>
-      ${d.hasTime?`<div class="srow" style="margin-top:12px"><h4 style="font-weight:500">시간</h4><label class="dchip">${d.time}<input type="time" data-in="time" value="${d.time}"></label></div>`:''}`:''}</div>
+      <div class="srow"><h4>시간 설정</h4><button class="sw ${d.hasTime?'on':''}" data-a="e-sw" data-v="hasTime" aria-label="시간 설정"></button></div>
+      <div class="coll ${d.hasTime?'open':''}"><div>
+        <div class="srow" style="margin-top:12px"><h4 style="font-weight:500">시간</h4><label class="dchip">${d.time}<input type="time" data-in="time" value="${d.time}"></label></div>
+        <div class="srow" style="margin-top:12px"><h4 style="font-weight:500">알림</h4><label class="sel"><select data-in="remind">${REMIND.map(([k,l])=>`<option value="${k}" ${d.remind===k?'selected':''}>${l}</option>`).join('')}</select>${I.updown}</label></div>
+      </div></div>
+      </div></div></div>
 
-    ${editingId?`<button class="delbtn" data-a="e-del">삭제</button>`:''}
+    ${editingId?`<button class="delbtn press" data-a="e-del">삭제</button>`:''}
   </div></div>`;
   m.querySelector('.mbody').scrollTop=sc;
-  if(first&&!editingId)setTimeout(()=>{const i=m.querySelector('[data-in=title]');if(i&&!preset_noFocus)i.focus()},320);
+  if(editorFirst&&!editingId&&!matchMedia('(pointer:coarse)').matches)setTimeout(()=>m.querySelector('[data-in=title]')?.focus(),360);
+  editorFirst=false;
 }
-let preset_noFocus=false;
 function saveDraft(){
-  if(!draft.title.trim()){toast('할 일 내용을 입력하세요');$('[data-in=title]')?.focus();return}
+  if(!draft.title.trim()){toast('할 일 내용을 입력하세요');const i=$('[data-in=title]');if(i){i.focus();i.animate([{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}],{duration:280})}return}
   draft.title=draft.title.trim();
   const wasEdit=!!editingId;
   if(wasEdit){const i=S.tasks.findIndex(t=>t.id===editingId);if(i>=0)S.tasks[i]=draft;else S.tasks.push(draft)}else S.tasks.push(draft);
   if(draft.hasDate&&ui.tab==='calendar'){const d=parse(draft.start);ui.y=d.getFullYear();ui.m=d.getMonth();ui.sel=draft.start}
+  ui.flash=draft.id;
+  if(draft.remind!=='none'&&draft.hasTime)ensurePermission();
   save();closeEditor();render();toast(wasEdit?'수정했어요':'추가했어요');
 }
 function addChecklist(){const i=$('#clIn');const v=i&&i.value.trim();if(!v)return;draft.checklist.push({text:v,done:false});renderEditor();setTimeout(()=>$('#clIn')?.focus(),0)}
 function descendants(id){const out=new Set([id]);let ch=true;while(ch){ch=false;for(const t of S.tasks){if(t.parentId&&out.has(t.parentId)&&!out.has(t.id)){out.add(t.id);ch=true}}}return out}
 
-/* ---------- sheets ---------- */
-function sheet(html){$('#sheet').innerHTML=html?`<div class="bg" data-a="sheet-close"></div><div class="panel"><div class="grab"></div>${html}</div>`:''}
+/* move the segment knob first so the slide plays, then commit */
+function segMove(el,fn){
+  const s=el.closest('.seg');const btns=[...s.querySelectorAll('button')];const k=s.querySelector('.knob');
+  k.style.transform=`translateX(${btns.indexOf(el)*100}%)`;setTimeout(()=>{fn();renderEditor()},300);
+}
+
+/* ================= sheets ================= */
+function sheet(html){
+  const sh=$('#sheet');
+  if(!html){if(!sh.innerHTML)return;sh.classList.add('closing');clearTimeout(sheet.t);sheet.t=setTimeout(()=>{sh.innerHTML='';sh.classList.remove('closing')},240);return}
+  clearTimeout(sheet.t);sh.classList.remove('closing');
+  const reopen=!!sh.querySelector('.panel');
+  sh.innerHTML=`<div class="bg" data-a="sheet-close" ${reopen?'style="animation:none"':''}></div><div class="panel" ${reopen?'style="animation:none"':''}><div class="grab"></div>${html}</div>`;
+}
+function notifState(){
+  if(!('Notification' in window))return isIOS()&&!isStandalone()?'홈 화면에 추가 필요':'지원 안 됨';
+  return {granted:'켜짐',denied:'차단됨',default:'꺼짐'}[Notification.permission];
+}
+const isIOS=()=>/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
 const SHEETS={
   settings:()=>`<h3>설정</h3>
+    <button class="prow" data-a="notif"><span>알림</span><span class="r">${notifState()}</span></button>
+    <button class="prow" data-a="notif-test"><span>테스트 알림 보내기</span></button>
+    <div class="note">${isIOS()&&!isStandalone()?'아이폰은 사파리 공유 버튼 → ‘홈 화면에 추가’로 설치한 뒤 그 아이콘으로 열어야 알림을 받을 수 있어요. ':''}알림은 앱이 열려 있거나 백그라운드에 남아 있을 때 울려요.</div>
     <div class="prow" data-a="set-hide"><span>완료한 항목 숨기기</span><span class="sw ${S.settings.hideDone?'on':''}"></span></div>
     <div class="prow" data-a="set-compact"><span>매트릭스 영역 이름 표시</span><span class="sw ${S.settings.compact?'on':''}"></span></div>
     <button class="prow" data-a="export"><span>데이터 백업 (JSON 저장)</span><span class="r">${S.tasks.length}개</span></button>
     <label class="prow"><span>백업 불러오기</span><span class="r">파일 선택</span><input type="file" accept="application/json,.json" data-in="import" hidden></label>
     <button class="prow" data-a="clear-done"><span>완료한 할 일 모두 지우기</span></button>
     <button class="prow red" data-a="reset"><span>모든 데이터 삭제</span></button>`,
-  help:()=>`<div class="help"><h3>아이젠하워 매트릭스</h3><p>할 일을 중요도와 긴급도로 나눠 무엇부터 할지 정해요. 빈 칸을 누르면 그 영역에 바로 추가돼요.</p>
-    ${Q.map((q,i)=>`<div class="hq">${qIcon(i,true,30)}<div><b>${q.name} · ${q.label}</b><span>${q.desc}</span></div></div>`).join('')}</div>`,
+  help:()=>`<div class="help"><h3>아이젠하워 매트릭스</h3><p>할 일을 중요도와 긴급도로 나눠 무엇부터 할지 정해요. 빈 칸을 누르면 그 영역에 바로 추가되고, 할 일을 길게 눌러 다른 칸으로 끌어 옮길 수 있어요.</p>
+    ${Q.map((q,i)=>`<div class="hq">${qIcon(i,'fill',28)}<div><b>${q.name} · ${q.label}</b><span>${q.desc}</span></div></div>`).join('')}</div>`,
   filter:()=>`<h3>필터</h3><div class="chips">${['all',...GROUPS].map(g=>`<button class="${S.settings.group===g?'on':''}" data-a="set-group" data-v="${g}">${g==='all'?'전체':g}</button>`).join('')}</div>
     <div class="prow" data-a="set-hide"><span>완료한 항목 숨기기</span><span class="sw ${S.settings.hideDone?'on':''}"></span></div>`,
   sort:()=>`<h3>정렬</h3>${[['created','추가한 순'],['date','날짜 순'],['name','이름 순'],['undone','미완료 먼저']].map(([k,l])=>`<button class="prow" data-a="set-sort" data-v="${k}"><span>${l}</span><span class="rad ${S.settings.sort===k?'on':''}"></span></button>`).join('')}`,
   parent:()=>{const ex=descendants(draft.id);const list=S.tasks.filter(t=>!ex.has(t.id));
-    return `<h3>상위 할 일 선택</h3>${list.length?list.map(t=>`<button class="prow" data-a="pick-parent" data-id="${t.id}"><span>${esc(t.title)}</span>${qIcon(t.quadrant,!t.done,22)}</button>`).join(''):'<div class="empty" style="padding:30px">연결할 수 있는 할 일이 없어요</div>'}`}
+    return `<h3>상위 할 일 선택</h3>${list.length?list.map(t=>`<button class="prow" data-a="pick-parent" data-id="${t.id}"><span>${esc(t.title)}</span>${qIcon(t.quadrant,t.done?'muted':'fill',20)}</button>`).join(''):'<div class="empty" style="padding:30px">연결할 수 있는 할 일이 없어요</div>'}`}
 };
-const openSheet=k=>sheet(SHEETS[k]());
+let sheetKind='';
+const openSheet=k=>{sheetKind=k;sheet(SHEETS[k]())};
 
-/* ---------- actions ---------- */
+/* ================= notifications ================= */
+async function ensurePermission(){
+  if(!('Notification' in window)){if(isIOS()&&!isStandalone())toast('홈 화면에 추가하면 알림을 받을 수 있어요');return false}
+  if(Notification.permission==='granted')return true;
+  if(Notification.permission==='denied'){toast('설정에서 알림이 차단되어 있어요');return false}
+  try{const p=await Notification.requestPermission();if(p==='granted'){toast('알림을 켰어요');return true}}catch(e){}
+  return false;
+}
+async function notify(title,body,tag){
+  try{const r=navigator.serviceWorker&&await navigator.serviceWorker.getRegistration();
+    if(r){await r.showNotification(title,{body,tag,icon:'icon-192.png',badge:'icon-192.png'});return}}catch(e){}
+  try{new Notification(title,{body,tag,icon:'icon-192.png'})}catch(e){}
+}
+function checkReminders(){
+  const can='Notification' in window&&Notification.permission==='granted';
+  const nowMs=Date.now();const t0=today();let changed=false;
+  for(const t of S.tasks){
+    if(t.done||!t.hasDate||!t.hasTime||!t.remind||t.remind==='none')continue;
+    const off=+t.remind*60000;
+    for(const k of [0,1]){
+      const ds=addDays(t0,k);
+      if(t.repeat?!occursOn(t,ds):ds!==t.start)continue;
+      const at=parse(ds);const[h,mi]=t.time.split(':').map(Number);at.setHours(h,mi,0,0);
+      const fire=at.getTime()-off;const key=t.id+'|'+ds+'|'+t.remind+'|'+t.time;
+      if(nowMs>=fire&&nowMs-fire<3*3600e3&&!S.notified[key]){
+        S.notified[key]=nowMs;changed=true;
+        const when=t.remind==='0'?'지금':REMIND.find(r=>r[0]===t.remind)[1].replace(' 전','')+' 뒤';
+        const body=`${when} · ${ds===t0?'오늘':kdate(ds)} ${t.time} · ${Q[t.quadrant].name}`;
+        if(can)notify(t.title,body,key);
+        if(document.visibilityState==='visible')toast(`🔔 ${t.title} — ${when}`);
+      }
+    }
+  }
+  for(const k in S.notified)if(nowMs-S.notified[k]>4*864e5){delete S.notified[k];changed=true}
+  if(changed)save();
+}
+setInterval(checkReminders,15000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){checkReminders();if(ui.tab==='calendar'||ui.tab==='dashboard')render()}});
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+/* ================= actions ================= */
 const find=id=>S.tasks.find(t=>t.id===id);
+function switchTab(k){
+  if(k===ui.tab){const s=$('#app .screen');s&&s.scrollTo({top:0,behavior:'smooth'});return}
+  const a=TABS.findIndex(x=>x[0]===ui.tab),b=TABS.findIndex(x=>x[0]===k);
+  ui.tab=k;ui.fab=false;ui.chatSel=null;ui.enter=true;
+  /* slide the pill before rebuilding so the move is visible */
+  const pill=$('.tabpill');if(pill)pill.style.left=`calc(3.5px + ${b} * (100% - 7px) / 5)`;
+  render(b>a?1:-1);
+}
 const A={
-  tab:el=>{ui.tab=el.dataset.v;ui.fab=false;ui.chatSel=null;render()},
-  toggle:el=>{const t=find(el.dataset.id);if(!t)return;t.done=!t.done;save();render()},
+  tab:el=>{buzz();switchTab(el.dataset.v)},
+  toggle:el=>{const t=find(el.dataset.id);if(!t)return;t.done=!t.done;ui.pop=t.id;buzz();save();render()},
   open:el=>{const t=find(el.dataset.id);if(t)openEditor(t)},
   new:el=>{const p={};if(el.dataset.q!=null)p.quadrant=+el.dataset.q;
-    if(el.dataset.d){p.start=p.end=el.dataset.d}
-    if(el.dataset.ev){p.type='event'}
-    if(ui.tab==='calendar'&&!el.dataset.d){p.start=p.end=ui.sel}
+    if(el.dataset.d)p.start=p.end=el.dataset.d;
+    else if(ui.tab==='calendar')p.start=p.end=ui.sel;
     openEditor(null,p)},
-  fab:()=>{ui.fab=!ui.fab;render()},
-  gomatrix:()=>{ui.tab='matrix';render()},
+  fab:()=>{ui.fab=!ui.fab;buzz();render()},
+  gomatrix:()=>switchTab('matrix'),
   layout:()=>{S.settings.compact=!S.settings.compact;save();render();toast(S.settings.compact?'영역 이름 표시':'영역 이름 숨김')},
   settings:()=>openSheet('settings'),help:()=>openSheet('help'),filter:()=>openSheet('filter'),sort:()=>openSheet('sort'),
   'sheet-close':()=>sheet(''),
-  'set-hide':()=>{S.settings.hideDone=!S.settings.hideDone;save();render();openSheet($('#sheet .panel h3').textContent==='필터'?'filter':'settings')},
-  'set-compact':()=>{S.settings.compact=!S.settings.compact;save();render();openSheet('settings')},
-  'set-group':el=>{S.settings.group=el.dataset.v;save();render();openSheet('filter')},
-  'set-sort':el=>{S.settings.sort=el.dataset.v;save();render();sheet('')},
+  'set-hide':el=>{S.settings.hideDone=!S.settings.hideDone;el.querySelector('.sw')?.classList.toggle('on');save();render()},
+  'set-compact':el=>{S.settings.compact=!S.settings.compact;el.querySelector('.sw')?.classList.toggle('on');save();render()},
+  'set-group':el=>{S.settings.group=el.dataset.v;save();render();el.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===el))},
+  'set-sort':el=>{S.settings.sort=el.dataset.v;save();el.closest('.panel').querySelectorAll('.rad').forEach(r=>r.classList.remove('on'));el.querySelector('.rad').classList.add('on');setTimeout(()=>{render();sheet('')},220)},
+  notif:async()=>{await ensurePermission();openSheet('settings')},
+  'notif-test':async()=>{if(await ensurePermission()){notify('매트릭스 투두','알림이 이렇게 표시돼요','test');toast('테스트 알림을 보냈어요')}},
   export:()=>{const b=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`matrix-todo-${today()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)},
   'clear-done':()=>{const n=S.tasks.filter(t=>t.done).length;if(!n){toast('완료한 할 일이 없어요');return}
     if(!confirm(`완료한 할 일 ${n}개를 지울까요?`))return;const gone=new Set(S.tasks.filter(t=>t.done).map(t=>t.id));
     S.tasks=S.tasks.filter(t=>!t.done);S.tasks.forEach(t=>{if(gone.has(t.parentId))t.parentId=null});save();render();sheet('');toast('지웠어요')},
-  reset:()=>{if(!confirm('모든 할 일과 메모를 삭제할까요? 되돌릴 수 없어요.'))return;S={tasks:[],chats:[],settings:defSettings()};save();render();sheet('');toast('초기화했어요')},
-  day:el=>{ui.sel=el.dataset.d;const d=parse(ui.sel);if(d.getMonth()!==ui.m){ui.y=d.getFullYear();ui.m=d.getMonth()}render()},
-  'cal-today':()=>{const n=new Date();ui.y=n.getFullYear();ui.m=n.getMonth();ui.sel=today();render()},
-  'chat-send':()=>{const i=$('#chatIn');const v=i.value.trim();if(!v)return;S.chats.push({id:uid(),text:v,ts:Date.now()});i.value='';save();render();$('#chatIn').focus()},
+  reset:()=>{if(!confirm('모든 할 일과 메모를 삭제할까요? 되돌릴 수 없어요.'))return;S={tasks:[],chats:[],notified:{},settings:defSettings()};save();render();sheet('');toast('초기화했어요')},
+  day:el=>{if(ui.sel===el.dataset.d)return;ui.sel=el.dataset.d;ui.selPop=true;ui.sheetAnim=true;const d=parse(ui.sel);
+    if(d.getMonth()!==ui.m){ui.mdir=d<new Date(ui.y,ui.m,1)?-1:1;ui.y=d.getFullYear();ui.m=d.getMonth()}buzz();render()},
+  'cal-today':()=>{const n=new Date();const dir=(n.getFullYear()*12+n.getMonth())-(ui.y*12+ui.m);ui.mdir=Math.sign(dir);ui.y=n.getFullYear();ui.m=n.getMonth();
+    if(ui.sel!==today()){ui.sel=today();ui.selPop=true;ui.sheetAnim=true}render()},
+  'chat-send':()=>{const i=$('#chatIn');const v=i.value.trim();if(!v)return;const id=uid();S.chats.push({id,text:v,ts:Date.now()});i.value='';ui.flash=id;save();render();$('#chatIn').focus()},
   msg:el=>{ui.chatSel=ui.chatSel===el.dataset.id?null:el.dataset.id;render()},
   'msg-task':el=>{const c=S.chats.find(x=>x.id===el.dataset.id);ui.chatSel=null;if(c)openEditor(null,{title:c.text.slice(0,200)})},
   'msg-copy':el=>{const c=S.chats.find(x=>x.id===el.dataset.id);ui.chatSel=null;render();if(c&&navigator.clipboard)navigator.clipboard.writeText(c.text).then(()=>toast('복사했어요'),()=>{})},
-  'msg-del':el=>{S.chats=S.chats.filter(x=>x.id!==el.dataset.id);ui.chatSel=null;save();render()},
+  'msg-del':el=>{const row=el.closest('.mrow');const id=el.dataset.id;row.animate([{opacity:1,transform:'none'},{opacity:0,transform:'scale(.8)'}],{duration:200,easing:'ease-in'}).onfinish=()=>{S.chats=S.chats.filter(x=>x.id!==id);ui.chatSel=null;save();render()}},
   /* editor */
   'e-close':()=>closeEditor(),
   'e-save':()=>saveDraft(),
-  'e-type':el=>{draft.type=el.dataset.v;renderEditor()},
-  'e-q':el=>{draft.quadrant=+el.dataset.v;renderEditor()},
+  'e-type':el=>segMove(el,()=>{draft.type=el.dataset.v}),
+  'e-rep':el=>segMove(el,()=>{draft.repeatType=el.dataset.v}),
+  'e-q':el=>{draft.quadrant=+el.dataset.v;buzz();renderEditor()},
   'e-color':el=>{draft.color=el.dataset.v;renderEditor()},
-  'e-sw':el=>{const k=el.dataset.v;draft[k]=!draft[k];if(k==='hasDate'&&draft.hasDate&&!draft.start){draft.start=draft.end=today()}renderEditor()},
-  'e-rep':el=>{draft.repeatType=el.dataset.v;renderEditor()},
-  'e-cl':el=>{const c=draft.checklist[+el.dataset.i];c.done=!c.done;renderEditor()},
-  'e-cl-del':el=>{draft.checklist.splice(+el.dataset.i,1);renderEditor()},
+  'e-sw':el=>{const k=el.dataset.v;
+    el.classList.toggle('on');const coll=el.closest('.srow').nextElementSibling;if(coll&&coll.classList.contains('coll'))coll.classList.toggle('open');
+    setTimeout(()=>{draft[k]=!draft[k];if(k==='hasDate'&&draft.hasDate&&!draft.start)draft.start=draft.end=today();renderEditor()},380)},
+  'e-cl':el=>{const c=draft.checklist[+el.dataset.i];c.done=!c.done;renderEditor();const b=$(`#modal [data-a="e-cl"][data-i="${el.dataset.i}"]`);b&&b.classList.add('pop')},
+  'e-cl-del':el=>{const row=el.closest('.clrow');row.animate([{opacity:1},{opacity:0,transform:'translateX(20px)'}],{duration:180}).onfinish=()=>{draft.checklist.splice(+el.dataset.i,1);renderEditor()}},
   'e-cl-add':()=>addChecklist(),
   'e-parent':()=>openSheet('parent'),
   'e-unparent':()=>{draft.parentId=null;renderEditor()},
@@ -607,17 +791,20 @@ const A={
   'e-del':()=>{if(!confirm('이 할 일을 삭제할까요?'))return;const id=editingId;S.tasks=S.tasks.filter(t=>t.id!==id);
     S.tasks.forEach(t=>{if(t.parentId===id)t.parentId=null});save();closeEditor();render();toast('삭제했어요')}
 };
+let swallowClick=false;
 document.addEventListener('click',e=>{
+  if(swallowClick){swallowClick=false;e.preventDefault();e.stopPropagation();return}
   const el=e.target.closest('[data-a]');if(!el)return;
-  const f=A[el.dataset.a];if(f){e.preventDefault();e.stopPropagation();f(el,e)}
-});
+  const f=A[el.dataset.a];if(f){if(el.tagName!=='LABEL')e.preventDefault();e.stopPropagation();f(el,e)}
+},true);
 function onField(e,isChange){
   const el=e.target;const k=el.dataset.in;if(!k)return;const v=el.value;
   if(k==='import'){if(!isChange)return;const file=el.files[0];if(!file)return;file.text().then(txt=>{try{const d=JSON.parse(txt);if(!Array.isArray(d.tasks))throw 0;
-      if(!confirm('현재 데이터를 백업 파일로 바꿀까요?'))return;S={tasks:d.tasks,chats:d.chats||[],settings:Object.assign(defSettings(),d.settings)};save();render();sheet('');toast('불러왔어요')}catch(_){toast('올바른 백업 파일이 아니에요')}});return}
+      if(!confirm('현재 데이터를 백업 파일로 바꿀까요?'))return;S={tasks:d.tasks,chats:d.chats||[],notified:{},settings:Object.assign(defSettings(),d.settings)};save();render();sheet('');toast('불러왔어요')}catch(_){toast('올바른 백업 파일이 아니에요')}});return}
   if(!draft)return;
   if(k==='title'){draft.title=v;$('.savebtn')?.classList.toggle('ok',!!v.trim());return}
   if(k==='group'||k==='store'){draft[k]=v;return}
+  if(k==='remind'){draft.remind=v;if(isChange&&v!=='none')ensurePermission();return}
   if(k==='time'){if(v)draft.time=v;if(isChange)renderEditor();return}
   if(k==='start'||k==='end'){
     if(!v||!isChange)return;
@@ -639,15 +826,57 @@ document.addEventListener('keydown',e=>{
     if(e.key==='ArrowLeft')moveMonth(-1);if(e.key==='ArrowRight')moveMonth(1);
   }
 });
-function moveMonth(n){const d=new Date(ui.y,ui.m+n,1);ui.y=d.getFullYear();ui.m=d.getMonth();
-  const s=parse(ui.sel);if(s.getMonth()!==ui.m||s.getFullYear()!==ui.y)ui.sel=ymd(d);render()}
+function moveMonth(n){const d=new Date(ui.y,ui.m+n,1);ui.y=d.getFullYear();ui.m=d.getMonth();ui.mdir=n;
+  const s=parse(ui.sel);if(s.getMonth()!==ui.m||s.getFullYear()!==ui.y){ui.sel=ymd(new Date(ui.y,ui.m,1));if(today().slice(0,7)===ui.sel.slice(0,7))ui.sel=today();ui.sheetAnim=true}
+  buzz();render()}
+
+/* ---- calendar swipe ---- */
 let tx=null,ty=null;
 document.addEventListener('touchstart',e=>{if(e.target.closest('#cgrid')){tx=e.touches[0].clientX;ty=e.touches[0].clientY}else tx=null},{passive:true});
 document.addEventListener('touchend',e=>{if(tx==null)return;const dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty;tx=null;
-  if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5)moveMonth(dx<0?1:-1)},{passive:true});
-document.addEventListener('wheel',e=>{if(!e.target.closest('#cgrid'))return;if(Math.abs(e.deltaY)<30)return;clearTimeout(moveMonth.t);moveMonth.t=setTimeout(()=>moveMonth(e.deltaY>0?1:-1),60)},{passive:true});
+  if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.4){swallowClick=true;setTimeout(()=>swallowClick=false,350);moveMonth(dx<0?1:-1)}},{passive:true});
+document.addEventListener('wheel',e=>{if(!e.target.closest('#cgrid'))return;const dlt=Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY;if(Math.abs(dlt)<25)return;
+  if(moveMonth.lock)return;moveMonth.lock=true;setTimeout(()=>moveMonth.lock=false,450);moveMonth(dlt>0?1:-1)},{passive:true});
+
+/* ---- long-press drag between quadrants ---- */
+let drag=null;
+document.addEventListener('pointerdown',e=>{
+  const it=e.target.closest('.qi');if(!it||e.target.closest('.ck'))return;
+  const st={id:it.dataset.id,x:e.clientX,y:e.clientY,el:it};
+  st.timer=setTimeout(()=>startDrag(st),380);drag=st;
+});
+function startDrag(st){
+  const r=st.el.getBoundingClientRect();const g=document.createElement('div');g.className='ghost';
+  g.innerHTML=st.el.innerHTML;g.style.width=r.width+'px';st.ox=st.x-r.left;st.oy=st.y-r.top;
+  g.style.transform=`translate(${r.left}px,${r.top}px) scale(1.06)`;document.body.appendChild(g);
+  st.ghost=g;st.active=true;st.el.classList.add('dragging');buzz();
+}
+document.addEventListener('pointermove',e=>{
+  if(!drag)return;
+  if(!drag.active){if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>8){clearTimeout(drag.timer);drag=null}return}
+  drag.ghost.style.transform=`translate(${e.clientX-drag.ox}px,${e.clientY-drag.oy}px) scale(1.06)`;
+  const q=document.elementFromPoint(e.clientX,e.clientY)?.closest('.quad');
+  document.querySelectorAll('.quad.hot').forEach(x=>x!==q&&x.classList.remove('hot'));
+  if(q&&!q.classList.contains('hot')){q.classList.add('hot');buzz()}
+});
+function endDrag(e,cancel){
+  if(!drag)return;clearTimeout(drag.timer);
+  if(drag.active){
+    const q=!cancel&&document.elementFromPoint(e.clientX,e.clientY)?.closest('.quad');
+    drag.ghost.remove();document.querySelectorAll('.quad.hot').forEach(x=>x.classList.remove('hot'));drag.el.classList.remove('dragging');
+    swallowClick=true;setTimeout(()=>swallowClick=false,350);
+    const t=find(drag.id);
+    if(q&&t&&+q.dataset.q!==t.quadrant){t.quadrant=+q.dataset.q;ui.flash=t.id;save();render();toast(`‘${Q[t.quadrant].name}’ 영역으로 옮겼어요`)}
+  }
+  drag=null;
+}
+document.addEventListener('pointerup',e=>endDrag(e));
+document.addEventListener('pointercancel',e=>endDrag(e,true));
+document.addEventListener('touchmove',e=>{if(drag&&drag.active)e.preventDefault()},{passive:false});
+document.addEventListener('contextmenu',e=>{if(e.target.closest('.qi'))e.preventDefault()});
 
 render();
+setTimeout(checkReminders,1500);
 </script>
 </body>
 </html>
