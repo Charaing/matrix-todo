@@ -162,8 +162,8 @@ svg{display:block}
   transition:background .25s,border-color .25s}
 .cell.sun{color:#ff4245}
 .cell.out{color:#4a4a4d}
-.cell.sel{background:#1f1f20}
-.cell.sel.pop,.cell.today.pop{animation:selPop .35s var(--spring)}
+.cell.pick{background:#1f1f20}
+.cell.pick.pop,.cell.today.pop{animation:selPop .35s var(--spring)}
 @keyframes selPop{from{transform:scale(.86)}}
 .cell.today{border-color:#123456;background:#00070c;color:var(--blue)}
 .cell .bars{display:flex;flex-direction:column;gap:2.5px;padding:6px 4px 0}
@@ -287,6 +287,11 @@ svg{display:block}
 #sheet.closing .bg{animation:fade .22s reverse forwards}
 #sheet.closing .panel{animation:down .25s var(--ease) forwards}
 .panel .grab{width:36px;height:5px;border-radius:3px;background:#3a3a3d;margin:0 auto 14px}
+#sheet .panel.top{top:0;bottom:auto;border-radius:0 0 26px 26px;padding:calc(var(--top) + 12px) 20px 10px;animation:dropIn .4s var(--ease)}
+#sheet.closing .panel.top{animation:dropOut .25s var(--ease) forwards}
+.panel.top .grab{margin:14px auto 0}
+@keyframes dropIn{from{transform:translateY(-100%)}}
+@keyframes dropOut{to{transform:translateY(-100%)}}
 .panel h3{font-size:18px;font-weight:700;margin-bottom:12px}
 .prow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 4px;border-bottom:1px solid #2c2c30;font-size:15.5px;cursor:pointer;width:100%;text-align:left}
 .prow:last-child{border:0}
@@ -934,7 +939,7 @@ function calendar(){
   const pool=visible(S.tasks);
   const grid=cells.map(d=>{
     const ds=ymd(d);const list=pool.filter(x=>occursOn(x,ds));const dow=d.getDay();
-    const cls=['cell',d.getMonth()!==m?'out':'',dow===0?'sun':'',ds===t?'today':'',ds===ui.sel&&ds!==t?'sel':'',ds===ui.sel&&ui.selPop?'pop':''].join(' ');
+    const cls=['cell',d.getMonth()!==m?'out':'',dow===0?'sun':'',ds===t?'today':'',ds===ui.sel&&ds!==t?'pick':'',ds===ui.sel&&ui.selPop?'pop':''].join(' ');
     return `<div class="${cls}" data-a="day" data-d="${ds}">${d.getDate()}<div class="bars">${list.slice(0,3).map(x=>`<i style="${x.color!==COLORS[0]?'background:'+x.color+';':''}opacity:${x.done?.35:1}"></i>`).join('')}${list.length>3?`<div class="more">+${list.length-3}</div>`:''}</div></div>`;
   }).join('');
   const dayList=visible(S.tasks.filter(x=>occursOn(x,ui.sel)));
@@ -1179,13 +1184,17 @@ function segMove(el,fn){
 }
 
 /* ================= sheets ================= */
-function sheet(html){
+/* top=true docks the panel under the status bar, so a keyboard never has to push it */
+function sheet(html,top){
   const sh=$('#sheet');
-  if(!html){if(!sh.innerHTML)return;sh.classList.add('closing');clearTimeout(sheet.t);sheet.t=setTimeout(()=>{sh.innerHTML='';sh.classList.remove('closing')},240);return}
+  if(!html){if(!sh.innerHTML)return;sh.classList.add('closing');document.activeElement?.blur?.();clearTimeout(sheet.t);sheet.t=setTimeout(()=>{sh.innerHTML='';sh.classList.remove('closing')},240);return}
   clearTimeout(sheet.t);sh.classList.remove('closing');
   const reopen=!!sh.querySelector('.panel');
-  sh.innerHTML=`<div class="bg" data-a="sheet-close" ${reopen?'style="animation:none"':''}></div><div class="panel" ${reopen?'style="animation:none"':''}><div class="grab"></div>${html}</div>`;
+  sh.innerHTML=`<div class="bg" data-a="sheet-close" ${reopen?'style="animation:none"':''}></div><div class="panel ${top?'top':''}" ${reopen?'style="animation:none"':''}>${top?'':'<div class="grab"></div>'}${html}${top?'<div class="grab"></div>':''}</div>`;
 }
+/* iOS scrolls the whole page to reveal a focused input; keep it pinned while a sheet is open */
+if(window.visualViewport){const pin=()=>{if($('#sheet').innerHTML&&(window.scrollY||visualViewport.offsetTop))window.scrollTo(0,0)};
+  visualViewport.addEventListener('scroll',pin);visualViewport.addEventListener('resize',pin);window.addEventListener('scroll',pin)}
 function notifState(){
   if(!('Notification' in window))return isIOS()&&!isStandalone()?'홈 화면에 추가 필요':'지원 안 됨';
   return {granted:'켜짐',denied:'차단됨',default:'꺼짐'}[Notification.permission];
@@ -1307,7 +1316,7 @@ const A={
   'ai-edit':el=>{const c=S.chats.find(x=>x.id===el.dataset.c);if(!c||!c.card||c.card.status!=='pending')return;c.card.status='edit';save();openEditor(null,taskFields(c.card.items[0]))},
   'ai-rv':el=>{const c=S.chats.find(x=>x.id===el.dataset.c);if(!c||c.card.status!=='pending')return;const id=el.dataset.id;c.card.checked[id]=!c.card.checked[id];
     el.classList.toggle('on',c.card.checked[id]);el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');buzz();save()},
-  quick:el=>{ui.fab=false;ui.qaBase=el.dataset.d||null;openSheet('quick');$('#qaIn')?.focus()},
+  quick:el=>{ui.fab=false;ui.qaBase=el.dataset.d||null;sheetKind='quick';sheet(SHEETS.quick(),true);$('#qaIn')?.focus()},
   'qa-add':()=>{const i=$('#qaIn');const v=i?i.value.trim():'';
     if(!v){i&&i.animate([{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}],{duration:280});return}
     const ts=parseMulti(v,ui.qaBase).map(toTask);ts.forEach(t=>S.tasks.push(t));const f=ts[0];
