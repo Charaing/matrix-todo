@@ -252,6 +252,12 @@ svg{display:block}
 .cladd input::placeholder{color:#5d5d63}
 .cladd button{width:46px;height:33px;border-radius:17px;background:#5b666c;display:grid;place-items:center;color:#83919a;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
 .cladd button svg{width:20px;height:20px}
+.wdays{display:flex;justify-content:space-between;gap:6px;margin-top:14px}
+.wday{width:36px;height:36px;border-radius:50%;background:#27272c;color:#c9c9ce;font-size:14.5px;font-weight:600;transition:background .2s,color .2s,transform .25s var(--spring)}
+.wday.sun{color:#ff6b6b}.wday.sat{color:#5fb4ff}
+.wday.on{background:var(--slate);color:#fff}
+.wquick{display:flex;gap:7px;margin-top:12px}
+.wquick button{height:28px;padding:0 12px;border-radius:14px;background:#27272c;color:#a8a8ad;font-size:13px}
 .qopts{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}
 .qopt{height:79px;background:#4c4c52;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;font-size:14px;color:#c9c9ce;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.08);transition:transform .3s var(--spring),background .2s}
@@ -471,12 +477,12 @@ const addDays=(s,n)=>{const d=parse(s);d.setDate(d.getDate()+n);return ymd(d)};
 const buzz=()=>{try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}};
 
 function newTask(o={}){const t=today();return Object.assign({id:uid(),title:'',group:GROUPS[0],store:'matrix',type:'todo',checklist:[],quadrant:0,
-  parentId:null,color:COLORS[0],repeat:false,repeatType:'weekly',hasDate:true,start:t,end:t,hasTime:false,time:'09:00',endTime:'',place:'',remind:'none',done:false,created:Date.now()},o)}
+  parentId:null,color:COLORS[0],repeat:false,repeatType:'weekly',hasDate:true,start:t,end:t,hasTime:false,time:'09:00',endTime:'',place:'',repeatDays:[],doneOn:{},remind:'none',done:false,created:Date.now()},o)}
 function defSettings(){return {hideDone:false,group:'all',sort:'created',compact:false}}
 function fixState(s){
   s.settings=Object.assign(defSettings(),s.settings);s.chats=s.chats||[];s.notified=s.notified||{};
   s.ai=Object.assign({state:null,brief:''},s.ai);s.journal=s.journal||{};
-  s.tasks.forEach(t=>{if(COLORS.indexOf(t.color)<0)t.color=COLORS[0];if(!t.remind)t.remind='none';if(t.endTime==null)t.endTime='';if(t.place==null)t.place=''});return s}
+  s.tasks.forEach(t=>{if(COLORS.indexOf(t.color)<0)t.color=COLORS[0];if(!t.remind)t.remind='none';if(t.endTime==null)t.endTime='';if(t.place==null)t.place='';if(!Array.isArray(t.repeatDays))t.repeatDays=[];if(!t.doneOn)t.doneOn={}});return s}
 function load(){
   try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&Array.isArray(s.tasks))return fixState(s)}catch(e){}
   const t=today();
@@ -492,8 +498,11 @@ const now0=new Date();
 let ui={dash:'today',qaBase:null,typing:false,tab:'matrix',y:now0.getFullYear(),m:now0.getMonth(),sel:today(),fab:false,chatSel:null,enter:true,pop:null,flash:null,mdir:0,selPop:false,sheetAnim:false};
 let draft=null,editingId=null,editorFirst=false;
 
+const repDays=t=>t.repeat&&t.repeatType==='weekly'&&t.repeatDays&&t.repeatDays.length?t.repeatDays:null;
 function occursOn(t,ds){
   if(!t.hasDate)return false;
+  const days=repDays(t);
+  if(days)return ds>=t.start&&days.includes(parse(ds).getDay());
   if(ds>=t.start&&ds<=t.end)return true;
   if(!t.repeat||ds<t.start)return false;
   const a=parse(t.start),b=parse(ds);
@@ -540,7 +549,8 @@ const nowHM=()=>{const d=new Date();return pad(d.getHours())+':'+pad(d.getMinute
 const durOf=t=>t.hasTime&&t.endTime?(toMin(t.endTime)-toMin(t.time)+1440)%1440:0;
 const fmtDur=m=>m<=0?'–':(m>=60?Math.floor(m/60)+'시간':'')+(m%60?(m>=60?' ':'')+m%60+'분':'');
 const timeLabel=t=>t.hasTime?t.time+(t.endTime?' – '+t.endTime:''):'';
-const repLabel=p=>({daily:'매일',weekly:'매주 '+wdOf(p.start)+'요일',monthly:'매월 '+parse(p.start).getDate()+'일'})[p.repeatType];
+const dayNames=ds=>{const k=[...ds].sort((a,b)=>((a+6)%7)-((b+6)%7));return k.join()==='1,2,3,4,5'?'평일':k.join()==='6,0'?'주말':k.map(i=>WD[i]).join('·')+(k.length===1?'요일':'')};
+const repLabel=p=>({daily:'매일',weekly:'매주 '+(p.repeatDays&&p.repeatDays.length?dayNames(p.repeatDays):wdOf(p.start)+'요일'),monthly:'매월 '+parse(p.start).getDate()+'일'})[p.repeatType];
 const remLabel=k=>(REMIND.find(r=>r[0]===k)||REMIND[0])[1];
 const KW={공부:/숙제|과제|공부|시험|수업|강의|학원|복습|예습|독서|레포트|리포트|논문|스터디|중간고사|기말|수능|토익|인강|도서관/,
   업무:/회의|미팅|보고|업무|출근|발표|출장|면접|프로젝트|클라이언트|거래처|결재|야근|회식|마감|미팅|세미나|워크숍/,
@@ -576,7 +586,12 @@ function parseKo(src,base){
   /* repeat */
   let repDow=null,repDom=null;
   cut(/매일|날마다/,()=>{r.repeat=true;r.repeatType='daily'});
-  cut(/매주\s*([월화수목금토일])(요일)?/,(m,d)=>{r.repeat=true;r.repeatType='weekly';repDow=WDK.indexOf(d)});
+  const setDays=ds=>{r.repeat=true;r.repeatType='weekly';r.repeatDays=ds;repDow=ds[0]};
+  cut(/(매\s*평일|평일\s*마다|평일에\s*매일|매주\s*평일)/,()=>setDays([1,2,3,4,5]));
+  cut(/(주말\s*마다|매\s*주말|매주\s*주말)/,()=>setDays([6,0]));
+  cut(/매주\s*((?:[월화수목금토일](?:요일)?(?:\s*(?:,|·|\/|와|과|이랑|랑|하고|및)?\s*))+)/,(m,g)=>{
+    const ds=[...new Set((g.replace(/요일/g,'').match(/[월화수목금토일]/g)||[]).map(c=>WDK.indexOf(c)))];if(!ds.length)return false;setDays(ds)});
+  cut(/((?:[월화수목금토일]요일\s*(?:,|·|와|과|이랑|랑|하고)?\s*)+)마다/,(m,g)=>{const ds=[...new Set(g.match(/[월화수목금토일](?=요일)/g).map(c=>WDK.indexOf(c)))];setDays(ds)});
   cut(/매주/,()=>{r.repeat=true;r.repeatType='weekly'});
   cut(/(매월|매달)\s*(\d{1,2})\s*일/,(m,a,d)=>{r.repeat=true;r.repeatType='monthly';repDom=+d});
   cut(/매월|매달/,()=>{r.repeat=true;r.repeatType='monthly'});
@@ -610,7 +625,8 @@ function parseKo(src,base){
   if(D.length){r.hasDate=true;r.start=D[0].ds;r.end=D[0].ds;
     if(D.length>1&&/(부터|까지|~|에서)/.test(src)){const e=D[D.length-1].ds;if(e>=r.start)r.end=e}}
   if(r.repeat&&!D.length){r.hasDate=true;
-    if(repDow!=null)r.start=addDays(T,(repDow-d0.getDay()+7)%7);
+    if(r.repeatDays)r.start=addDays(T,Math.min(...r.repeatDays.map(k=>(k-d0.getDay()+7)%7)));
+    else if(repDow!=null)r.start=addDays(T,(repDow-d0.getDay()+7)%7);
     else if(repDom!=null){let s=mk(tY,tM,repDom);if(!s||s<T)s=mk(tY,tM+1,repDom);r.start=s||T}
     r.end=r.start}
   /* times */
@@ -657,7 +673,7 @@ function parseMulti(src,base){
 }
 function taskFields(p){
   const o={title:p.title||p.place||'새 일정',group:p.group,quadrant:p.quadrant,type:p.type,hasDate:p.hasDate,hasTime:p.hasTime,time:p.time,endTime:p.endTime||'',
-    place:p.place||'',repeat:p.repeat,repeatType:p.repeatType,remind:p.hasTime?p.remind:'none'};
+    place:p.place||'',repeat:p.repeat,repeatType:p.repeatType,repeatDays:p.repeatDays||[],remind:p.hasTime?p.remind:'none'};
   if(p.hasDate){o.start=p.start;o.end=p.end}
   return o;
 }
@@ -855,8 +871,8 @@ function applyCard(c){
     if(dd){t.hasDate=true;t.start=addDays(t.start,dd);t.end=addDays(t.end,dd)}
     if(it.toTime&&it.toTime!==t.time){if(t.endTime&&t.hasTime)t.endTime=fromMin(toMin(t.endTime)+toMin(it.toTime)-toMin(t.time));t.time=it.toTime;t.hasTime=true}n++});k.doneMsg=`${n}개 옮겼어요`}
   if(k.kind==='del'){const ids=new Set(k.items.map(i=>i.id));S.tasks=S.tasks.filter(t=>!ids.has(t.id));S.tasks.forEach(t=>{if(ids.has(t.parentId))t.parentId=null});k.doneMsg=`${ids.size}개 삭제했어요`}
-  if(k.kind==='done'){k.items.forEach(it=>{const t=find(it.id);if(t){t.done=true;n++}});k.doneMsg=`${n}개 완료로 표시했어요`}
-  if(k.kind==='review'){k.ids.forEach(id=>{const t=find(id);if(t)t.done=!!k.checked[id]});k.doneMsg='체크한 대로 반영했어요'}
+  if(k.kind==='done'){k.items.forEach(it=>{const t=find(it.id);if(t){t.done=true;if(t.repeat){t.doneOn=t.doneOn||{};t.doneOn[today()]=true}n++}});k.doneMsg=`${n}개 완료로 표시했어요`}
+  if(k.kind==='review'){k.ids.forEach(id=>{const t=find(id);if(!t)return;t.done=!!k.checked[id];if(t.repeat){t.doneOn=t.doneOn||{};if(t.done)t.doneOn[today()]=true;else delete t.doneOn[today()]}});k.doneMsg='체크한 대로 반영했어요'}
   k.status='done';
 }
 
@@ -879,7 +895,8 @@ function hdrMain(extra=''){return `<div class="hdr st">
   <button class="cbtn glass press" data-a="quick">${I.plus}</button></div>`}
 
 function matrix(){
-  const ts=visible(S.tasks.filter(t=>t.store==='matrix'));
+  const T=today();
+  const ts=visible(S.tasks.filter(t=>t.store==='matrix'&&(occursOn(t,T)||!t.hasDate||(!t.done&&!t.repeat&&t.end<T))));
   const quad=(q,r2)=>{
     const items=ts.filter(t=>t.quadrant===q);
     return `<div class="quad st ${r2?'r2':''}" style="--i:${q+1};--hc:${Q[q].color}" data-a="new" data-q="${q}">
@@ -1074,7 +1091,9 @@ function setNav(p,animate,hl){
   const on=hl!=null?hl:Math.round(p);
   nav.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('on',i===on));
 }
+function syncRepeats(){const T=today();for(const t of S.tasks)if(t.repeat){t.doneOn=t.doneOn||{};t.done=!!t.doneOn[T]}}
 function render(dir){
+  syncRepeats();
   const app=$('#app');
   const keepChat=$('#chatIn')?.value||'';
   const keepScroll=!dir&&$('#app .screen:not(.out)')?.scrollTop||0;
@@ -1143,7 +1162,9 @@ function renderEditor(){
       <div class="colors">${COLORS.map(c=>`<button class="dot ${c===d.color?'on':''}" style="background:${c}" data-a="e-color" data-v="${c}">${c===d.color?I.check:''}</button>`).join('')}</div></div>
 
     <div class="sec"><div class="srow"><h4>반복</h4><button class="sw ${d.repeat?'on':''}" data-a="e-sw" data-v="repeat" aria-label="반복"></button></div>
-      <div class="coll ${d.repeat?'open':''}"><div><div class="hr"></div><div class="srow"><h4 style="font-weight:500">주기</h4>${seg([['daily','매일'],['weekly','매주'],['monthly','매월']],d.repeatType,'e-rep',190)}</div></div></div></div>
+      <div class="coll ${d.repeat?'open':''}"><div><div class="hr"></div><div class="srow"><h4 style="font-weight:500">주기</h4>${seg([['daily','매일'],['weekly','매주'],['monthly','매월']],d.repeatType,'e-rep',190)}</div>
+      <div class="coll ${d.repeatType==='weekly'?'open':''}"><div><div class="wdays">${[1,2,3,4,5,6,0].map(i=>`<button class="wday press ${(d.repeatDays||[]).includes(i)?'on':''} ${i===0?'sun':i===6?'sat':''}" data-a="e-day" data-v="${i}">${WD[i]}</button>`).join('')}</div>
+      <div class="wquick"><button data-a="e-days" data-v="1,2,3,4,5">평일</button><button data-a="e-days" data-v="6,0">주말</button><button data-a="e-days" data-v="0,1,2,3,4,5,6">매일</button></div></div></div></div></div></div>
 
     <div class="sec"><div class="srow"><h4>날짜 지정</h4><button class="sw ${d.hasDate?'on':''}" data-a="e-sw" data-v="hasDate" aria-label="날짜 지정"></button></div>
       <div class="coll ${d.hasDate?'open':''}"><div><div class="hr"></div>
@@ -1283,7 +1304,7 @@ function switchTab(k){
 }
 const A={
   tab:el=>{buzz();switchTab(el.dataset.v)},
-  toggle:el=>{const t=find(el.dataset.id);if(!t)return;t.done=!t.done;ui.pop=t.id;buzz();save();render()},
+  toggle:el=>{const t=find(el.dataset.id);if(!t)return;t.done=!t.done;if(t.repeat){t.doneOn=t.doneOn||{};if(t.done)t.doneOn[today()]=true;else delete t.doneOn[today()]}ui.pop=t.id;buzz();save();render()},
   open:el=>{const t=find(el.dataset.id);if(t)openEditor(t)},
   new:el=>{const p={};if(el.dataset.q!=null)p.quadrant=+el.dataset.q;
     if(el.dataset.d)p.start=p.end=el.dataset.d;
@@ -1336,10 +1357,13 @@ const A={
   'e-close':()=>closeEditor(),
   'e-save':()=>saveDraft(),
   'e-type':el=>segMove(el,()=>{draft.type=el.dataset.v}),
-  'e-rep':el=>segMove(el,()=>{draft.repeatType=el.dataset.v}),
+  'e-rep':el=>segMove(el,()=>{draft.repeatType=el.dataset.v;if(draft.repeatType==='weekly'&&!(draft.repeatDays||[]).length)draft.repeatDays=[parse(draft.start).getDay()]}),
+  'e-day':el=>{const i=+el.dataset.v;const ds=new Set(draft.repeatDays||[]);if(ds.has(i)){if(ds.size===1){toast('요일을 하나 이상 골라 주세요');return}ds.delete(i)}else ds.add(i);
+    draft.repeatDays=[...ds];buzz();el.classList.toggle('on',ds.has(i))},
+  'e-days':el=>{draft.repeatDays=el.dataset.v.split(',').map(Number);buzz();renderEditor()},
   'e-q':el=>{draft.quadrant=+el.dataset.v;buzz();renderEditor()},
   'e-color':el=>{draft.color=el.dataset.v;renderEditor()},
-  'e-sw':el=>{const k=el.dataset.v;
+  'e-sw':el=>{const k=el.dataset.v;if(k==='repeat'&&!draft.repeat&&draft.repeatType==='weekly'&&!(draft.repeatDays||[]).length)draft.repeatDays=[parse(draft.start).getDay()];
     el.classList.toggle('on');const coll=el.closest('.srow').nextElementSibling;if(coll&&coll.classList.contains('coll'))coll.classList.toggle('open');
     setTimeout(()=>{draft[k]=!draft[k];if(k==='hasDate'&&draft.hasDate&&!draft.start)draft.start=draft.end=today();renderEditor()},380)},
   'e-cl':el=>{const c=draft.checklist[+el.dataset.i];c.done=!c.done;renderEditor();const b=$(`#modal [data-a="e-cl"][data-i="${el.dataset.i}"]`);b&&b.classList.add('pop')},
