@@ -480,6 +480,7 @@ function newTask(o={}){const t=today();return Object.assign({id:uid(),title:'',g
   parentId:null,color:COLORS[0],repeat:false,repeatType:'weekly',hasDate:true,start:t,end:t,hasTime:false,time:'09:00',endTime:'',place:'',repeatDays:[],doneOn:{},remind:'none',done:false,created:Date.now()},o)}
 function defSettings(){return {hideDone:false,group:'all',sort:'created',compact:false}}
 function fixState(s){
+  (s.tasks||[]).forEach(t=>{if(t.repeat&&!t.hasDate){t.hasDate=true;t.start=t.end=ymd(new Date())}});
   s.settings=Object.assign(defSettings(),s.settings);s.chats=s.chats||[];s.notified=s.notified||{};
   s.ai=Object.assign({state:null,brief:''},s.ai);s.journal=s.journal||{};
   s.tasks.forEach(t=>{if(COLORS.indexOf(t.color)<0)t.color=COLORS[0];if(!t.remind)t.remind='none';if(t.endTime==null)t.endTime='';if(t.place==null)t.place='';if(!Array.isArray(t.repeatDays))t.repeatDays=[];if(!t.doneOn)t.doneOn={}});return s}
@@ -513,7 +514,7 @@ function occursOn(t,ds){
 }
 function visible(list){
   const s=S.settings;
-  const r=list.filter(t=>(!s.hideDone||!t.done)&&(s.group==='all'||t.group===s.group));
+  const r=list.filter(t=>(!s.hideDone||!t.done||t.id===ui.keep)&&(s.group==='all'||t.group===s.group));
   const by={created:(a,b)=>a.created-b.created,
     date:(a,b)=>(a.hasDate?a.start+(a.hasTime?a.time:''):'9999').localeCompare(b.hasDate?b.start+(b.hasTime?b.time:''):'9999')||a.created-b.created,
     name:(a,b)=>a.title.localeCompare(b.title,'ko'),
@@ -896,7 +897,7 @@ function hdrMain(extra=''){return `<div class="hdr st">
 
 function matrix(){
   const T=today();
-  const ts=visible(S.tasks.filter(t=>t.store==='matrix'&&(occursOn(t,T)||!t.hasDate||(!t.done&&!t.repeat&&t.end<T))));
+  const ts=visible(S.tasks.filter(t=>t.store==='matrix'&&(occursOn(t,T)||!t.hasDate||(!t.repeat&&t.end<T&&(!t.done||t.doneAt===T)))));
   const quad=(q,r2)=>{
     const items=ts.filter(t=>t.quadrant===q);
     return `<div class="quad st ${r2?'r2':''}" style="--i:${q+1};--hc:${Q[q].color}" data-a="new" data-q="${q}">
@@ -1186,6 +1187,8 @@ function renderEditor(){
   editorFirst=false;
 }
 function saveDraft(){
+  if(draft.repeat&&!draft.hasDate){draft.hasDate=true;draft.start=draft.end=today()}
+  if(draft.repeat&&draft.repeatType==='weekly'&&(draft.repeatDays||[]).length){const s0=draft.start;for(let i=0;i<7;i++){const d=addDays(s0,i);if(draft.repeatDays.includes(parse(d).getDay())){draft.start=draft.end=d;break}}}
   if(!draft.title.trim()){toast('할 일 내용을 입력하세요');const i=$('[data-in=title]');if(i){i.focus();i.animate([{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}],{duration:280})}return}
   draft.title=draft.title.trim();
   const wasEdit=!!editingId;
@@ -1304,7 +1307,7 @@ function switchTab(k){
 }
 const A={
   tab:el=>{buzz();switchTab(el.dataset.v)},
-  toggle:el=>{const t=find(el.dataset.id);if(!t)return;t.done=!t.done;if(t.repeat){t.doneOn=t.doneOn||{};if(t.done)t.doneOn[today()]=true;else delete t.doneOn[today()]}ui.pop=t.id;buzz();save();render()},
+  toggle:el=>{const t=find(el.dataset.id);if(!t)return;t.done=!t.done;t.doneAt=t.done?today():'';if(t.done&&S.settings.hideDone){ui.keep=t.id;clearTimeout(ui.keepT);ui.keepT=setTimeout(()=>{ui.keep=null;render()},1100)}if(t.repeat){t.doneOn=t.doneOn||{};if(t.done)t.doneOn[today()]=true;else delete t.doneOn[today()]}ui.pop=t.id;buzz();save();render()},
   open:el=>{const t=find(el.dataset.id);if(t)openEditor(t)},
   new:el=>{const p={};if(el.dataset.q!=null)p.quadrant=+el.dataset.q;
     if(el.dataset.d)p.start=p.end=el.dataset.d;
@@ -1357,13 +1360,13 @@ const A={
   'e-close':()=>closeEditor(),
   'e-save':()=>saveDraft(),
   'e-type':el=>segMove(el,()=>{draft.type=el.dataset.v}),
-  'e-rep':el=>segMove(el,()=>{draft.repeatType=el.dataset.v;if(draft.repeatType==='weekly'&&!(draft.repeatDays||[]).length)draft.repeatDays=[parse(draft.start).getDay()]}),
-  'e-day':el=>{const i=+el.dataset.v;const ds=new Set(draft.repeatDays||[]);if(ds.has(i)){if(ds.size===1){toast('요일을 하나 이상 골라 주세요');return}ds.delete(i)}else ds.add(i);
+  'e-rep':el=>segMove(el,()=>{draft.repeatType=el.dataset.v}),
+  'e-day':el=>{const i=+el.dataset.v;const ds=new Set(draft.repeatDays||[]);if(ds.has(i))ds.delete(i);else ds.add(i);
     draft.repeatDays=[...ds];buzz();el.classList.toggle('on',ds.has(i))},
   'e-days':el=>{draft.repeatDays=el.dataset.v.split(',').map(Number);buzz();renderEditor()},
   'e-q':el=>{draft.quadrant=+el.dataset.v;buzz();renderEditor()},
   'e-color':el=>{draft.color=el.dataset.v;renderEditor()},
-  'e-sw':el=>{const k=el.dataset.v;if(k==='repeat'&&!draft.repeat&&draft.repeatType==='weekly'&&!(draft.repeatDays||[]).length)draft.repeatDays=[parse(draft.start).getDay()];
+  'e-sw':el=>{const k=el.dataset.v;
     el.classList.toggle('on');const coll=el.closest('.srow').nextElementSibling;if(coll&&coll.classList.contains('coll'))coll.classList.toggle('open');
     setTimeout(()=>{draft[k]=!draft[k];if(k==='hasDate'&&draft.hasDate&&!draft.start)draft.start=draft.end=today();renderEditor()},380)},
   'e-cl':el=>{const c=draft.checklist[+el.dataset.i];c.done=!c.done;renderEditor();const b=$(`#modal [data-a="e-cl"][data-i="${el.dataset.i}"]`);b&&b.classList.add('pop')},
