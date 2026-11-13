@@ -53,6 +53,7 @@ svg{display:block}
 .pillgrp .ib svg{width:25px;height:25px}
 .badge{width:30px;height:30px;border:1.6px solid #5a5a5e;border-radius:9px;display:grid;place-items:center;font-size:15px;font-weight:600;color:#e8e8ea}
 .htitle{position:absolute;left:50%;transform:translateX(-50%);font-size:19.5px;font-weight:700;color:var(--num);letter-spacing:-.3px;white-space:nowrap}
+.htitle .hsub{display:block;text-align:center;font-size:10.5px;font-weight:500;color:#8e8e93;letter-spacing:0;margin-top:-1px}
 
 /* ---------- checkbox ---------- */
 .ck{width:20px;height:20px;flex:none;border-radius:5.5px;border:1.6px solid var(--slate);display:grid;place-items:center;color:transparent;transition:background .2s,border-color .2s}
@@ -110,6 +111,9 @@ svg{display:block}
 .qi .ck{margin-top:1px}
 .qt{flex:1;min-width:0;word-break:break-all}
 .qt small{color:#6e6e73;font-size:11px}
+.prow.gk input{flex:0 1 52%;min-width:0;background:transparent;border:0;outline:0;color:var(--sub);text-align:right;font:inherit;font-size:14px}
+.qtm{display:flex;align-items:center;gap:3px;color:#8e8e93;font-size:11.5px;line-height:15px;margin-top:1px;font-variant-numeric:tabular-nums}
+.qtm svg{width:11px;height:11px}
 .qi.dragging{opacity:.25}
 .ghost{position:fixed;left:0;top:0;z-index:90;pointer-events:none;background:#2c2c2e;border-radius:12px;padding:8px 10px;box-shadow:0 14px 34px rgba(0,0,0,.6);
   transition:scale .2s;font-size:14px;display:flex;gap:8px;align-items:center}
@@ -902,7 +906,7 @@ function matrix(){
     const items=ts.filter(t=>t.quadrant===q);
     return `<div class="quad st ${r2?'r2':''}" style="--i:${q+1};--hc:${Q[q].color}" data-a="new" data-q="${q}">
       ${S.settings.compact?`<div class="qhead">${qIcon(q,'fill',15)}<span>${Q[q].name}</span><em>${items.filter(t=>!t.done).length}</em></div>`:''}
-      ${items.map(t=>`<div class="qi ${ui.flash===t.id?'flash':''}" data-a="open" data-id="${t.id}">${ck(t,1)}<span class="qt">${ttl(t)}${t.checklist.length?` <small>${t.checklist.filter(c=>c.done).length}/${t.checklist.length}</small>`:''}</span></div>`).join('')}
+      ${items.map(t=>`<div class="qi ${ui.flash===t.id?'flash':''}" data-a="open" data-id="${t.id}">${ck(t,1)}<span class="qt">${ttl(t)}${t.checklist.length?` <small>${t.checklist.filter(c=>c.done).length}/${t.checklist.length}</small>`:''}${t.hasTime?`<span class="qtm">${timeLabel(t)}</span>`:''}</span></div>`).join('')}
     </div>`};
   return `${hdrMain(`<button class="cbtn glass press" data-a="layout">${I.layout}</button>`)}
     <div class="mx">
@@ -1004,8 +1008,80 @@ function msgsHTML(){
     +(ui.typing?`<div class="mrow ai"><div class="arow"><span class="av">${I.spark}</span><div class="abub"><div class="typing"><i></i><i></i><i></i></div></div></div></div>`:'');
 }
 const SUGG=[['아침 브리핑',1],['하루 마감 시작',1],['내일 일정 알려줘'],['이번 주에 가장 바쁜 날은?'],['오늘 가장 먼저 준비할 건?'],['이번 달에 운동 몇 번 했어?'],['다음 주 월요일 오후 3시 병원 예약'],['도움말']];
+
+/* ================= Gemini assistant ================= */
+/* The API key lives only in this device's localStorage (never in the code, never in backups). */
+const GKEY='matrix-todo-gkey',GMODEL='gemini-4-hydrogen';
+const gkey=()=>{try{return localStorage.getItem(GKEY)||''}catch(e){return ''}};
+const setGkey=v=>{try{v?localStorage.setItem(GKEY,v):localStorage.removeItem(GKEY)}catch(e){}};
+const GSCHEMA={type:'object',properties:{
+  reply:{type:'string'},
+  show:{type:'array',items:{type:'string'}},
+  actions:{type:'array',items:{type:'object',properties:{
+    type:{type:'string',enum:['add','move','delete','done']},
+    ids:{type:'array',items:{type:'string'}},
+    title:{type:'string'},date:{type:'string'},endDate:{type:'string'},time:{type:'string'},endTime:{type:'string'},
+    place:{type:'string'},quadrant:{type:'integer'},group:{type:'string',enum:GROUPS},kind:{type:'string',enum:['todo','event']},
+    repeat:{type:'string',enum:['none','daily','weekly','monthly']},repeatDays:{type:'array',items:{type:'integer'}},
+    remind:{type:'string',enum:REMIND.map(r=>r[0])},toDate:{type:'string'},toTime:{type:'string'}},required:['type']}}},
+  required:['reply']};
+function gContext(){
+  const T=today(),lo=addDays(T,-14),hi=addDays(T,60);
+  const rows=S.tasks.filter(t=>!t.hasDate||t.repeat||(t.end>=lo&&t.start<=hi)).slice(-150).map(t=>[t.id,t.title,
+    t.hasDate?t.start+(t.end!==t.start?'~'+t.end:''):'날짜없음',t.hasTime?timeLabel(t):'',t.place||'',
+    t.repeat?repLabel(t):'',Q[t.quadrant].name,t.group,t.done?'완료':'미완료'].join(' | '));
+  const d=parse(T);
+  return `너는 한국어 일정/할 일 앱의 AI 비서야. 오늘은 ${T} (${WD[d.getDay()]}요일), 지금 ${nowHM()}.
+사용자의 할 일 목록 (id | 제목 | 날짜 | 시간 | 장소 | 반복 | 사분면 | 그룹 | 상태):
+${rows.join('\n')||'(없음)'}
+
+규칙:
+- reply: 친근한 존댓말로 짧게(3~5문장 이내). 마크다운 쓰지 마.
+- 일정을 보여줄 땐 해당 id를 show에 넣어 (reply에는 요약만).
+- 등록/옮기기/삭제/완료 요청은 actions에 넣어. 앱이 확인 카드를 띄우고 사용자가 누르면 반영돼. 그러니 reply에서는 "이렇게 할까요?"처럼 말해.
+- add: title, date(YYYY-MM-DD, 날짜 없으면 비움), endDate, time/endTime(HH:MM 24시간), place, quadrant(0=중요·긴급, 1=중요·안긴급, 2=안중요·긴급, 3=안중요·안긴급), group, kind(약속·행사=event, 그 외 todo), repeat, repeatDays(0=일~6=토, 매주일 때), remind(분 단위 문자열, 시간 있을 때만).
+- move: ids, toDate(YYYY-MM-DD), toTime(HH:MM, 시간 바꿀 때만). delete/done: ids.
+- id는 반드시 위 목록에 있는 것만 써. 확실하지 않으면 actions 없이 되물어봐.`;
+}
+async function geminiReply(v){
+  const hist=S.chats.slice(-13,-1).filter(c=>c.text).map(c=>({role:c.role==='ai'?'model':'user',parts:[{text:c.text}]}));
+  const body={systemInstruction:{parts:[{text:gContext()}]},contents:[...hist,{role:'user',parts:[{text:v}]}],
+    generationConfig:{responseMimeType:'application/json',responseSchema:GSCHEMA,thinkingConfig:{thinkingLevel:'low'}}};
+  const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),60000);
+  let r;try{r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GMODEL}:generateContent`,{method:'POST',signal:ctl.signal,
+    headers:{'Content-Type':'application/json','x-goog-api-key':gkey()},body:JSON.stringify(body)})}finally{clearTimeout(to)}
+  if(!r.ok){let m='';try{m=(await r.json()).error.message}catch(e){}throw new Error(r.status+' '+m)}
+  const j=await r.json();const txt=(j.candidates?.[0]?.content?.parts||[]).filter(x=>!x.thought).map(x=>x.text||'').join('');
+  return gToMsgs(JSON.parse(txt));
+}
+const isYmd=x=>/^\d{4}-\d{2}-\d{2}$/.test(x||''),isHm=x=>/^\d{2}:\d{2}$/.test(x||'');
+function gToMsgs(o){
+  const T=today(),out=[];
+  const main=say(String(o.reply||'').trim()||'네.');
+  const show=(o.show||[]).map(find).filter(Boolean).sort((a,b)=>(a.hasDate?a.start:'9')<(b.hasDate?b.start:'9')?-1:1).slice(0,12);
+  if(show.length)main.list=show.map(t=>rowOf(t,t.hasDate?dlabel(t.repeat&&t.start<T?T:t.start):'날짜 없음'));
+  out.push(main);
+  const acts=o.actions||[];
+  const adds=acts.filter(a=>a.type==='add'&&a.title).map(a=>{const hasDate=isYmd(a.date),hasTime=isHm(a.time);const rp=!!a.repeat&&a.repeat!=='none';
+    return {found:true,title:String(a.title).slice(0,80),hasDate:hasDate||rp,start:hasDate?a.date:T,end:isYmd(a.endDate)&&a.endDate>=a.date?a.endDate:(hasDate?a.date:T),
+      hasTime,time:hasTime?a.time:'09:00',endTime:hasTime&&isHm(a.endTime)?a.endTime:'',place:a.place||'',
+      quadrant:[0,1,2,3].includes(a.quadrant)?a.quadrant:0,group:GROUPS.includes(a.group)?a.group:GROUPS[0],type:a.kind==='event'?'event':'todo',
+      repeat:rp,repeatType:rp?a.repeat:'weekly',repeatDays:rp&&a.repeat==='weekly'?(a.repeatDays||[]).filter(n=>n>=0&&n<7):[],
+      remind:hasTime&&REMIND.some(r=>r[0]===a.remind)?a.remind:'none'}});
+  if(adds.length)out.push(addCard(adds));
+  const rowsFor=a=>(a.ids||[]).map(find).filter(Boolean);
+  const mv=[];acts.filter(a=>a.type==='move').forEach(a=>rowsFor(a).forEach(t=>{const from=t.hasDate?(t.repeat&&t.start<T?T:t.start):T;
+    const to=isYmd(a.toDate)?a.toDate:from,toTime=isHm(a.toTime)?a.toTime:(t.hasTime?t.time:'');
+    if(to!==from||toTime!==(t.hasTime?t.time:''))mv.push({id:t.id,title:t.title,from,fromTime:t.hasTime?t.time:'',to,toTime})}));
+  if(mv.length)out.push(say('이렇게 옮길까요?',{card:{kind:'move',items:mv,status:'pending'}}));
+  for(const [ty,kind,q] of [['delete','del','삭제할까요?'],['done','done','완료로 표시할까요?']]){
+    const its=[];acts.filter(a=>a.type===ty).forEach(a=>rowsFor(a).forEach(t=>{if(!its.some(x=>x.id===t.id))its.push({id:t.id,title:t.title,from:t.hasDate?t.start:'',fromTime:t.hasTime?t.time:''})}));
+    if(its.length)out.push(say(`이 ${its.length}개를 ${q}`,{card:{kind,items:its,status:'pending'}}));
+  }
+  return out;
+}
 function chat(){
-  return `<div class="hdr st"><button class="cbtn glass press" data-a="settings">${I.gear}</button><div class="htitle">AI 비서</div><div class="sp"></div>
+  return `<div class="hdr st"><button class="cbtn glass press" data-a="settings">${I.gear}</button><div class="htitle">AI 비서<small class="hsub">${gkey()?'Gemini 4 Hydrogen':'규칙 기반'}</small></div><div class="sp"></div>
       <button class="cbtn glass press" data-a="quick" aria-label="빠른 추가">${I.plus}</button></div>
     <div class="msgs st" id="msgs">${msgsHTML()}</div>
     <div class="sugg">${SUGG.map(([s,ic])=>`<button class="glass press" data-a="sugg" data-v="${esc(s)}">${ic?I.spark:''}${esc(s)}</button>`).join('')}</div>
@@ -1019,11 +1095,12 @@ function renderMsgs(){
 function sendChat(text){
   const v=String(text||'').trim();if(!v)return;
   const id=uid();S.chats.push({id,text:v,ts:Date.now()});ui.flash=id;ui.typing=true;ui.chatSel=null;save();renderMsgs();
-  setTimeout(()=>{
-    let out;try{out=assistant(v)}catch(e){console.error(e);out=[say('앗, 처리하다 문제가 생겼어요. 다시 말씀해 주세요.')]}
-    ui.typing=false;for(const r of out){r.id=uid();r.ts=Date.now();S.chats.push(r);ui.flash=r.id}
-    save();renderMsgs();
-  },420+Math.random()*260);
+  const rule=()=>{try{return assistant(v)}catch(e){console.error(e);return [say('앗, 처리하다 문제가 생겼어요. 다시 말씀해 주세요.')]}};
+  const post=out=>{ui.typing=false;for(const r of out){r.id=uid();r.ts=Date.now();S.chats.push(r);ui.flash=r.id}save();renderMsgs()};
+  const local=S.ai.state||/^(아침\s*)?브리핑|하루\s*마감|마감\s*시작|^도움말?$/.test(v);
+  if(!gkey()||local||!navigator.onLine){setTimeout(()=>post(rule()),420+Math.random()*260);return}
+  geminiReply(v).then(post).catch(e=>{console.warn('Gemini',e);const out=rule();
+    out[out.length-1].foot=/401|403|API key|API_KEY/i.test(e.message)?'Gemini 키를 확인해 주세요 · 규칙 기반으로 답했어요':'Gemini 연결이 안 돼서 규칙 기반으로 답했어요';post(out)});
 }
 function autoBrief(){
   if(S.ai.brief===today())return;S.ai.brief=today();
@@ -1230,6 +1307,8 @@ const SHEETS={
     <button class="prow" data-a="notif"><span>알림</span><span class="r">${notifState()}</span></button>
     <button class="prow" data-a="notif-test"><span>테스트 알림 보내기</span></button>
     <div class="note">${isIOS()&&!isStandalone()?'아이폰은 사파리 공유 버튼 → ‘홈 화면에 추가’로 설치한 뒤 그 아이콘으로 열어야 알림을 받을 수 있어요. ':''}알림은 앱이 열려 있거나 백그라운드에 남아 있을 때 울려요.</div>
+    <div class="prow gk"><span>Gemini API 키</span><input type="password" data-in="gkey" value="${esc(gkey())}" placeholder="붙여넣기" autocomplete="off" spellcheck="false"></div>
+    <div class="note">키를 넣으면 AI 비서가 Gemini 4 Hydrogen으로 답해요. 키는 이 기기에만 저장되고 백업 파일에도 들어가지 않아요. 비우면 규칙 기반으로 돌아가요.</div>
     <div class="prow" data-a="set-hide"><span>완료한 항목 숨기기</span><span class="sw ${S.settings.hideDone?'on':''}"></span></div>
     <div class="prow" data-a="set-compact"><span>매트릭스 영역 이름 표시</span><span class="sw ${S.settings.compact?'on':''}"></span></div>
     <button class="prow" data-a="export"><span>데이터 백업 (JSON 저장)</span><span class="r">${S.tasks.length}개</span></button>
@@ -1389,6 +1468,7 @@ function onField(e,isChange){
   if(k==='import'){if(!isChange)return;const file=el.files[0];if(!file)return;file.text().then(txt=>{try{const d=JSON.parse(txt);if(!Array.isArray(d.tasks))throw 0;
       if(!confirm('현재 데이터를 백업 파일로 바꿀까요?'))return;S=fixState({tasks:d.tasks,chats:d.chats,ai:d.ai,journal:d.journal,settings:d.settings});save();render();sheet('');toast('불러왔어요')}catch(_){toast('올바른 백업 파일이 아니에요')}});return}
   if(k==='qa'){const p=$('#qaPrev');if(p)p.innerHTML=qaPreview(v);return}
+  if(k==='gkey'){setGkey(v.trim());if(isChange&&ui.tab==='chat')render();if(isChange)toast(v.trim()?'Gemini 키를 저장했어요':'규칙 기반으로 돌아갔어요');return}
   if(!draft)return;
   if(k==='title'){draft.title=v;$('.savebtn')?.classList.toggle('ok',!!v.trim());return}
   if(k==='group'||k==='store'||k==='place'){draft[k]=v;return}
